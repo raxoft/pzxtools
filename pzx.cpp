@@ -103,6 +103,8 @@ void pzx_store( const uint count, const uint duration )
 
 void pzx_pulse( const uint duration )
 {
+    hope( duration < 0x80000000 ) ;
+
     if ( pulse_count > 0 ) {
 
         if ( pulse_duration == duration && pulse_count < 0x7FFF ) {

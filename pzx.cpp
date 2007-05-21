@@ -69,8 +69,8 @@ void pzx_header( const void * const data, const uint size )
     hope( data || size == 0 ) ;
 
     if ( header_buffer.is_empty() ) {
-        header_buffer.write< u8 >( PZX_MAJOR ) ;
-        header_buffer.write< u8 >( PZX_MINOR ) ;
+        header_buffer.write_little< u8 >( PZX_MAJOR ) ;
+        header_buffer.write_little< u8 >( PZX_MINOR ) ;
     }
 
     header_buffer.write( data, size ) ;
@@ -199,10 +199,15 @@ void pzx_data(
     header_buffer.write_little< u8 >( pulse_count_0 ) ;
     header_buffer.write_little< u8 >( pulse_count_1 ) ;
 
-    pzx_write_buffer( PZX_DATA, header_buffer ) ;
+    for ( uint i = 0 ; i < pulse_count_0 ; i++ ) {
+        header_buffer.write_little< u16 >( pulse_sequence_0[ i ] ) ;
+    }
 
-    pzx_write( pulse_sequence_0, 2 * pulse_count_0 ) ;
-    pzx_write( pulse_sequence_1, 2 * pulse_count_1 ) ;
+    for ( uint i = 0 ; i < pulse_count_1 ; i++ ) {
+        header_buffer.write_little< u16 >( pulse_sequence_1[ i ] ) ;
+    }
+
+    pzx_write_buffer( PZX_DATA, header_buffer ) ;
 
     pzx_write( data, ( bit_count + 7 ) / 8 ) ;
 }

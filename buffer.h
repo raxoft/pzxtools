@@ -9,6 +9,10 @@
 #include <cstdio>
 #include <cstring>
 
+#ifndef DEBUG_H
+#include "debug.h"
+#endif
+
 #ifndef ENDIAN_H
 #include "endian.h"
 #endif

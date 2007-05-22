@@ -1,7 +1,7 @@
 
 CXXFLAGS = -g -DDEBUG -Wall
 #CXXFLAGS = -O2 -Wall
-LDLIBS = -lm -lpthread -ladns
+#LDLIBS = -lm -lpthread
 
 PROGS=tzx2pzx
 
@@ -31,7 +31,7 @@ TOUCH=touch
 pzx.o : pzx.cpp buffer.h pzx.h
 tzx.o : tzx.cpp endian.h pzx.h tzx.h
 tzx2pzx.o : tzx2pzx.cpp buffer.h pzx.h tzx.h
-buffer.h : endian.h
+buffer.h : debug.h endian.h
 	$(TOUCH) $@
 endian.h : types.h
 	$(TOUCH) $@

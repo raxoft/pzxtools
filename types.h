@@ -5,9 +5,6 @@
 #ifndef TYPES_H
 #define TYPES_H 1
 
-#define hope(c) void( 0 )
-#define fail(c,...) void( 0 )
-
 // Storage types.
 
 typedef unsigned char   u8 ;

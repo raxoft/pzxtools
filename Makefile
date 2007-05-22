@@ -17,6 +17,7 @@ tidy: clean
 	rm -rf $(PROGS)
 
 archive:
+	make dep
 	tar czvf ../tzx2pzx.tar.gz *.cpp *.h Makefile
 
 dep:
@@ -29,7 +30,7 @@ dep:
 TOUCH=touch
 pzx.o : pzx.cpp buffer.h pzx.h
 tzx.o : tzx.cpp endian.h pzx.h tzx.h
-tzx2pzx.o : tzx2pzx.cpp pzx.h tzx.h
+tzx2pzx.o : tzx2pzx.cpp buffer.h pzx.h tzx.h
 buffer.h : endian.h
 	$(TOUCH) $@
 endian.h : types.h

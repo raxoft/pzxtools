@@ -6,6 +6,7 @@
 #define BUFFER_H 1
 
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
 
 #ifndef ENDIAN_H
@@ -57,6 +58,27 @@ public:
 
 public:
 
+    bool read( FILE * const file )
+    {
+        hope( file ) ;
+
+        for ( ; ; ) {
+
+            const uint bytes_free = buffer_size - bytes_used ;
+            const uint bytes_read = std::fread( buffer + bytes_used, 1, bytes_free, file ) ;
+
+            bytes_used += bytes_read ;
+
+            if ( bytes_read != bytes_free ) {
+                return ( ferror( file ) == 0 ) ;
+            }
+
+            reallocate( 2 * buffer_size ) ;
+        }
+    }
+
+public:
+
     inline void write( const void * const data, const uint size )
     {
         hope( data || size == 0 ) ;
@@ -93,6 +115,11 @@ public:
     inline byte * get_data( void ) const
     {
         return buffer ;
+    }
+
+    inline byte * get_data_end( void ) const
+    {
+        return buffer + bytes_used ;
     }
 
     inline uint get_data_size( void ) const

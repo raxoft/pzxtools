@@ -58,6 +58,12 @@ int main( int argc, char * * argv )
 
     fclose( input_file ) ;
 
+    // Make sure it is the TZX file.
+
+    if ( buffer.get_data_size() < 10 || std::memcmp( buffer.get_data(), "ZXTape!\x1a", 8 ) != 0 ) {
+        fail( "input is not a TZX file" ) ;
+    }
+
     // Open the output file.
 
     FILE * const output_file = ( output_name ? fopen( output_name, "wb" ) : stdout ) ;

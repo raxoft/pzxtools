@@ -331,7 +331,7 @@ bool tzx_process_block(
         {
             const uint leader_count = ( block[4] < 128 ? LONG_LEADER_COUNT : SHORT_LEADER_COUNT ) ;
             tzx_render_pilot( level, leader_count, LEADER_CYCLES, SYNC_1_CYCLES, SYNC_2_CYCLES ) ;
-            tzx_render_data( level, block + 0x04, data_size, 0, BIT_0_CYCLES, BIT_1_CYCLES, TAIL_CYCLES, GET2(0x00) ) ;
+            tzx_render_data( level, block + 0x04, data_size, 8, BIT_0_CYCLES, BIT_1_CYCLES, TAIL_CYCLES, GET2(0x00) ) ;
             break ;
         }
         case TZX_TURBO_BLOCK:

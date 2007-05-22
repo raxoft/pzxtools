@@ -79,7 +79,7 @@ void pzx_header( const void * const data, const uint size )
 
 void pzx_info( const void * const string, const uint size )
 {
-    pzx_header( data, size ) ;
+    pzx_header( string, size ) ;
     header_buffer.write< u8 >( 0 ) ;
 }
 
@@ -168,7 +168,7 @@ void pzx_flush( void )
     }
 
     if ( pulse_buffer.is_not_empty() ) {
-        pzx_write_buffer( PZX_PULSE, pulse_buffer ) ;
+        pzx_write_buffer( PZX_PULSES, pulse_buffer ) ;
     }
 }
 

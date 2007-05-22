@@ -4,6 +4,14 @@
 
 #include "tzx.h"
 #include "pzx.h"
+#include "endian.h"
+
+// Macros for fetching little endian data from current block.
+
+#define GET1(o)     (block[o])
+#define GET2(o)     (block[o]+(block[(o)+1]<<8))
+#define GET3(o)     (block[o]+(block[(o)+1]<<8)+(block[(o)+2]<<16))
+#define GET4(o)     (block[o]+(block[(o)+1]<<8)+(block[(o)+2]<<16)+(block[(o)+3]<<24))
 
 uint tzx_get_header_size( const byte * const block )
 {
@@ -33,7 +41,7 @@ uint tzx_get_header_size( const byte * const block )
     }
 }
 
-uint tzx_get_data_size( const byte * const block )
+uint tzx_get_data_size( const byte * block )
 {
     switch ( *block++ ) {
         case TZX_NORMAL_BLOCK:      return GET2(0x02) ;
@@ -152,7 +160,6 @@ void tzx_render_data(
     if ( pause_length > 0 ) {
         level = false ;
         pzx_pause( pause_length * MILLISECOND_CYCLES, level ) ;
-        last_level = level ;
     }
 }
 
@@ -169,12 +176,30 @@ void tzx_render_data(
     tzx_render_data( level, data, data_size, bits_in_last_byte, bit_0_cycles, bit_0_cycles, bit_1_cycles, bit_1_cycles, pause_length ) ;
 }
 
+void tzx_render_pause( bool & level, const uint duration )
+{
+    hope( duration > 0 ) ;
+
+    if ( level ) {
+        tzx_render_pulse( level, MILLISECOND_CYCLES ) ;
+    }
+    tzx_render_pulse( level, duration ) ;
+}
+
+void tzx_process_blocks(
+    bool & level,
+    uint & block_index,
+    const byte * const * const blocks,
+    const uint block_count,
+    const uint end_type
+) ;
+
 bool tzx_process_block(
     bool & level,
     uint & block_index,
-    const byte * const * const blocks
+    const byte * const * const blocks,
     const uint block_count,
-    const uint end_type,
+    const uint end_type
 )
 {
     hope( blocks ) ;
@@ -183,10 +208,13 @@ bool tzx_process_block(
     const byte * block = blocks[ block_index++ ] ;
     hope( block ) ;
 
+    const uint data_size = tzx_get_data_size( block ) ;
+
     switch ( *block++ ) {
         case TZX_NORMAL_BLOCK:
         {
-            tzx_render_pilot( level, LEADER_COUNT, LEADER_CYCLES, SYNC_1_CYCLES, SYNC_2_CYCLES ) ;
+            const uint leader_count = ( block[4] < 128 ? LONG_LEADER_COUNT : SHORT_LEADER_COUNT ) ;
+            tzx_render_pilot( level, leader_count, LEADER_CYCLES, SYNC_1_CYCLES, SYNC_2_CYCLES ) ;
             tzx_render_data( level, block + 0x04, data_size, 0, BIT_0_CYCLES, BIT_1_CYCLES, GET2(0x00) ) ;
             break ;
         }
@@ -298,7 +326,8 @@ bool tzx_process_block(
             const uint current_index = block_index - 1 ;
             for ( uint i = 0 ; i < count ; i++ ) {
                 const sint offset = (s16) GET2(2+2*i) ;
-                tzx_process_blocks( level, current_index + offset, blocks, block_count, TZX_RETURN ) ;
+                block_index = current_index + offset ;
+                tzx_process_blocks( level, block_index, blocks, block_count, TZX_RETURN ) ;
             }
             block_index = current_index + 1 ;
             break ;
@@ -349,7 +378,7 @@ bool tzx_process_block(
             const uint minor = GET1(0x08) ;
             if ( major != TZX_MAJOR ) {
                 // FIXME: print error in this case.
-                return NULL ;
+                return false ;
             }
             if ( minor > TZX_MINOR ) {
                 // FIXME: Print warning in this case.
@@ -388,11 +417,11 @@ void tzx_render( const byte * const tape_start, const byte * const tape_end )
     const byte * blocks[ block_limit ] ;
     uint block_count = 0 ;
 
-    const byte * const block = tape_start ;
+    const byte * block = tape_start ;
 
     while ( block < tape_end ) {
 
-        blocks[ block_index ] = block ;
+        blocks[ block_count ] = block ;
 
         block = tzx_get_next_block( block, tape_end ) ;
 
@@ -400,11 +429,11 @@ void tzx_render( const byte * const tape_start, const byte * const tape_end )
             break ;
         }
 
-        if ( block_index == block_limit ) {
+        if ( block_count == block_limit ) {
             break ;
         }
 
-        block_index++ ;
+        block_count++ ;
     }
 
     // Now process process each block in turn.

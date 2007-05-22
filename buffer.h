@@ -8,8 +8,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#ifndef TYPES_H
-#include "types.h"
+#ifndef ENDIAN_H
+#include "endian.h"
 #endif
 
 /**
@@ -42,7 +42,7 @@ private:
     {
         hope( new_size > buffer_size ) ;
 
-        buffer = std::realloc( buffer, new_size ) ;
+        buffer = static_cast< byte * >( std::realloc( buffer, new_size ) ) ;
         hope( buffer ) ;
 
         buffer_size = new_size ;

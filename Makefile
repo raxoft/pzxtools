@@ -28,11 +28,13 @@ dep:
 
 TOUCH=touch
 pzx.o : pzx.cpp buffer.h pzx.h
-tzx.o : tzx.cpp pzx.h tzx.h
+tzx.o : tzx.cpp endian.h pzx.h tzx.h
 tzx2pzx.o : tzx2pzx.cpp pzx.h tzx.h
-buffer.h : types.h
+buffer.h : endian.h
 	$(TOUCH) $@
-pzx.h : types.h
+endian.h : types.h
+	$(TOUCH) $@
+pzx.h : buffer.h
 	$(TOUCH) $@
 tzx.h : types.h
 	$(TOUCH) $@

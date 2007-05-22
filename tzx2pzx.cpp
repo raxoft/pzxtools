@@ -8,5 +8,6 @@
 int main(  )
 {
 
+    tzx_render( NULL, NULL ) ;
 
 }

@@ -52,7 +52,7 @@ void pzx_write( const void * const data, const uint size )
 void pzx_write_block( const uint tag, const void * const data, const uint size )
 {
     u32 header[ 2 ] ;
-    header[ 0 ] = big_endian< u32 >( tag ) ;
+    header[ 0 ] = native_endian< u32 >( tag ) ;
     header[ 1 ] = little_endian< u32 >( size ) ;
 
     pzx_write( header, sizeof( header ) ) ;

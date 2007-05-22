@@ -2,6 +2,7 @@
 
 // Saving to PZX files.
 
+#include "pzx.h"
 #include "buffer.h"
 
 namespace {
@@ -10,7 +11,7 @@ FILE * output_file ;
 
 Buffer header_buffer ;
 
-Buffer output_buffer ;
+Buffer pulse_buffer ;
 
 uint pulse_count ;
 uint pulse_duration ;
@@ -76,6 +77,12 @@ void pzx_header( const void * const data, const uint size )
     header_buffer.write( data, size ) ;
 }
 
+void pzx_info( const void * const string, const uint size )
+{
+    pzx_header( data, size ) ;
+    header_buffer.write_native< u8 >( 0 ) ;
+}
+
 void pzx_info( const char * const string )
 {
     hope( string ) ;
@@ -89,15 +96,15 @@ void pzx_store( const uint count, const uint duration )
     hope( duration < 0x80000000 ) ;
 
     if ( count > 1 || duration > 0xFFFF ) {
-        output_buffer.write_little< u16 >( 0x8000 | count ) ;
+        pulse_buffer.write_little< u16 >( 0x8000 | count ) ;
     }
 
     if ( duration < 0x8000 ) {
-        output_buffer.write_little< u16 >( duration ) ;
+        pulse_buffer.write_little< u16 >( duration ) ;
     }
     else {
-        output_buffer.write_little< u16 >( 0x8000 | ( duration >> 16 ) ) ;
-        output_buffer.write_little< u16 >( duration & 0xFFFF ) ;
+        pulse_buffer.write_little< u16 >( 0x8000 | ( duration >> 16 ) ) ;
+        pulse_buffer.write_little< u16 >( duration & 0xFFFF ) ;
     }
 }
 
@@ -160,8 +167,8 @@ void pzx_flush( void )
         pulse_count = 0 ;
     }
 
-    if ( output_buffer.is_not_empty() ) {
-        pzx_write_buffer( PZX_PULSE, output_buffer ) ;
+    if ( pulse_buffer.is_not_empty() ) {
+        pzx_write_buffer( PZX_PULSE, pulse_buffer ) ;
     }
 }
 
@@ -171,8 +178,8 @@ void pzx_data(
     const bool initial_level,
     const uint pulse_count_0,
     const uint pulse_count_1,
-    const word * const pulse_sequence_0,
-    const word * const pulse_sequence_1,
+    const u16 * const pulse_sequence_0,
+    const u16 * const pulse_sequence_1,
     const uint tail_cycles
 )
 {
@@ -194,17 +201,40 @@ void pzx_data(
     header_buffer.write_little< u8 >( pulse_count_0 ) ;
     header_buffer.write_little< u8 >( pulse_count_1 ) ;
 
-    // FIXME: what if it is already little endian?
-
-    for ( uint i = 0 ; i < pulse_count_0 ; i++ ) {
-        header_buffer.write_little< u16 >( pulse_sequence_0[ i ] ) ;
-    }
-
-    for ( uint i = 0 ; i < pulse_count_1 ; i++ ) {
-        header_buffer.write_little< u16 >( pulse_sequence_1[ i ] ) ;
-    }
-
     pzx_write_buffer( PZX_DATA, header_buffer ) ;
 
+    pzx_write( data, pulse_sequence_0, 2 * pulse_count_0 ) ;
+    pzx_write( data, pulse_sequence_1, 2 * pulse_count_1 ) ;
+
     pzx_write( data, ( bit_count + 7 ) / 8 ) ;
+}
+
+void pzx_pause( const uint duration, const bool level )
+{
+    hope( duration < 0x80000000 ) ;
+
+    pzx_flush() ;
+    header_buffer.write_little< u32 >( ( level << 31 ) | duration ) ;
+    pzx_write_buffer( PZX_PAUSE, header_buffer ) ;
+}
+
+void pzx_stop( const uint flags )
+{
+    hope( flags < 0x8000 ) ;
+    
+    pzx_flush() ;
+    header_buffer.write_little< u16 >( flags ) ;
+    pzx_write_buffer( PZX_STOP, header_buffer ) ;
+}
+
+void pzx_browse( const void * const data, const uint size )
+{
+    pzx_flush() ;
+    pzx_write_block( PZX_BROWSE, data, size ) ;
+}
+
+void pzx_browse( const char * const string )
+{
+    hope( string ) ;
+    pzx_browse( string, std::strlen( string ) ) ;
 }

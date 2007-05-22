@@ -23,4 +23,4 @@ const uint PZX_PAUSE	= 'PAUS' ;
 const uint PZX_STOP		= 'STOP' ;
 const uint PZX_BROWSE	= 'BRWS' ;
 
-#endif /* PZX_H */
+#endif // PZX_H

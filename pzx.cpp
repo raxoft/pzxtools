@@ -121,33 +121,26 @@ void pzx_pulse( const uint duration )
 
 void pzx_out( const uint duration, const bool level )
 {
+    hope( duration < 0x80000000 ) ;
+
     if ( duration == 0 ) {
         return ;
     }
 
-    if ( last_level == level ) {
-        const uint limit = 0x7FFFFFFF ;
-
-        while ( duration > limit ) {
-            pzx_pulse( limit ) ;
-            pzx_pulse( 0 ) ;
-            duration -= limit ;
-        }
-
-        last_duration += duration ;
-
-        if ( last_duration > limit ) {
-            pzx_pulse( limit ) ;
-            pzx_pulse( 0 ) ;
-            last_duration -= limit ;
-        }
-        return ;
+    if ( last_level != level ) {
+        pzx_pulse( last_duration ) ;
+        last_duration = 0 ;
+        last_level = level ;
     }
 
-    pzx_pulse( last_duration ) ;
+    last_duration += duration ;
 
-    last_level = level ;
-    last_duration = duration ;
+    const uint limit = 0x7FFFFFFF ;
+    if ( last_duration > limit ) {
+        pzx_pulse( limit ) ;
+        pzx_pulse( 0 ) ;
+        last_duration -= limit ;
+    }
 }
 
 void pzx_flush( void )
@@ -200,6 +193,8 @@ void pzx_data(
     header_buffer.write_little< u16 >( tail_cycles ) ;
     header_buffer.write_little< u8 >( pulse_count_0 ) ;
     header_buffer.write_little< u8 >( pulse_count_1 ) ;
+
+    // FIXME: what if it is already little endian?
 
     for ( uint i = 0 ; i < pulse_count_0 ; i++ ) {
         header_buffer.write_little< u16 >( pulse_sequence_0[ i ] ) ;

@@ -54,4 +54,8 @@ const byte TZX_HARDWARE_INFO    = 0x33 ;
 const byte TZX_CUSTOM_INFO      = 0x35 ;
 const byte TZX_GLUE             = 0x5A ;
 
+// Interface.
+
+void tzx_render( const byte * const tape_start, const byte * const tape_end ) ;
+
 #endif // TZX_H

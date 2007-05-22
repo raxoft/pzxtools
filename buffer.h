@@ -71,7 +71,7 @@ public:
     }
 
     template< typename Type >
-    inline void write_native( const Type value )
+    inline void write( const Type value )
     {
         write( &value, sizeof( value ) ) ;
     }
@@ -79,13 +79,13 @@ public:
     template< typename Type >
     inline void write_little( const Type value )
     {
-        write_native( little_endian( value ) ) ;
+        write( little_endian( value ) ) ;
     }
 
     template< typename Type >
     inline void write_big( const Type value )
     {
-        write_native( big_endian( value ) ) ;
+        write( big_endian( value ) ) ;
     }
 
 public:

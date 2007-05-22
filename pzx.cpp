@@ -80,7 +80,7 @@ void pzx_header( const void * const data, const uint size )
 void pzx_info( const void * const string, const uint size )
 {
     pzx_header( data, size ) ;
-    header_buffer.write_native< u8 >( 0 ) ;
+    header_buffer.write< u8 >( 0 ) ;
 }
 
 void pzx_info( const char * const string )
@@ -203,14 +203,15 @@ void pzx_data(
 
     pzx_write_buffer( PZX_DATA, header_buffer ) ;
 
-    pzx_write( data, pulse_sequence_0, 2 * pulse_count_0 ) ;
-    pzx_write( data, pulse_sequence_1, 2 * pulse_count_1 ) ;
+    pzx_write( pulse_sequence_0, 2 * pulse_count_0 ) ;
+    pzx_write( pulse_sequence_1, 2 * pulse_count_1 ) ;
 
     pzx_write( data, ( bit_count + 7 ) / 8 ) ;
 }
 
 void pzx_pause( const uint duration, const bool level )
 {
+    hope( duration > 0 ) ;
     hope( duration < 0x80000000 ) ;
 
     pzx_flush() ;
@@ -221,7 +222,7 @@ void pzx_pause( const uint duration, const bool level )
 void pzx_stop( const uint flags )
 {
     hope( flags < 0x8000 ) ;
-    
+
     pzx_flush() ;
     header_buffer.write_little< u16 >( flags ) ;
     pzx_write_buffer( PZX_STOP, header_buffer ) ;

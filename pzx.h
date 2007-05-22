@@ -16,11 +16,11 @@ const byte PZX_MINOR = 3 ;
 
 // PZX block tags.
 
-const uint PZX_HEADER	= 'ZXTP' ;
-const uint PZX_PULSES	= 'PULS' ;
-const uint PZX_DATA		= 'DATA' ;
-const uint PZX_PAUSE	= 'PAUS' ;
-const uint PZX_STOP		= 'STOP' ;
-const uint PZX_BROWSE	= 'BRWS' ;
+const uint PZX_HEADER   = 'ZXTP' ;
+const uint PZX_PULSES   = 'PULS' ;
+const uint PZX_DATA     = 'DATA' ;
+const uint PZX_PAUSE    = 'PAUS' ;
+const uint PZX_STOP     = 'STOP' ;
+const uint PZX_BROWSE   = 'BRWS' ;
 
 #endif // PZX_H

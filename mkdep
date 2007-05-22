@@ -1,0 +1,92 @@
+#! /usr/bin/perl
+#
+# $Id: mkdep 39 2006-05-19 20:48:12Z patrik $
+#
+# mkdep: Generate makefile dependencies automatically
+
+use Getopt::Long;
+
+$\ = "\n" ;
+
+@incdir = qw( . ) ;
+@default_suffices = qw( c cc cpp S asm ) ;
+$objsuf = '.o' ;
+$touch = '$(TOUCH) $@' ;
+
+die "Invalid arguments, stopped"
+unless GetOptions(
+	'incdir|include|I=s'	=>	\@incdir,
+	'suffix|S=s'		=>	\@suffices,
+	'objectsuffix|O=s'	=>	\$objsuf,
+	'dependency|D=s'	=>	\@dep,
+	'exclude|E=s'		=>	\%exclude,
+	'ignore|nowarn|W=s'	=>	\@ignore,
+	'touchrule|T=s'		=>	\$touch,
+	'buildrule|B=s'		=>	\$build,
+) ;
+
+@suffices = @default_suffices unless @suffices ;
+
+@src = @ARGV or @src = glob( join( ' ', map { "*." . $_ } @suffices ) ) ;
+@src = grep { not exists $exclude{$_} } @src ;
+
+%obj = map { $_ => $_ } @src ;
+
+%done = map { $_ => $_ } @ignore ;
+
+@src = grep { not exists $done{$_} } (@src,@dep) or die "No sources, stopped" ;
+
+@incdir = grep { -d $_ or print STDERR "mkdep: no dir $_!" and 0 } @incdir ;
+
+%found = %done ;
+open( FIND, "find @incdir -maxdepth 1 -type f |" ) or die "Can't run find" ;
+while(<FIND>) {
+	chop ;
+	s|^\./|| ;
+	m|^([^/]*/)*([^/]*)$| ;
+	$found{$+} = $_ unless exists $found{$+} ;
+}
+close( FIND ) ;
+
+@objout = @depout = () ;
+
+foreach $src (@src) {
+	next if exists $done{$src} ;
+	$done{$src}++ ;
+	my( %inc, $out, $str ) ;
+	if( -f $src && open( SRC, $src ) ) {
+		while(<SRC>) {
+			$inc{$1} = "" if /^\s*#include\s*"(.*?)".*$/ ;
+		}
+		close( SRC ) ;
+	}
+	else {
+		print STDERR "mkdep: can't find $src!" ;
+	}
+	if( $obj{$src} ) {
+		$src =~ /^(.*?)(\.[^.]*)?$/ ;
+		$str = "$1$objsuf : $src" ;
+		$out = \@objout ;
+	}
+	else {
+		next unless %inc ;
+		$str = "$src :" ;
+		$out = \@depout ;
+	}
+	foreach $inc (sort keys %inc) {
+		$inc = $found{$inc} if exists $found{$inc} ;
+		$str .= " $inc" ;
+		push( @src, $inc ) ;
+	}
+	push( @$out, $str ) ;
+}
+
+foreach ( sort( @objout ) ) {
+	print ;
+	print "\t$build" if $build ;
+}
+
+foreach ( sort( @depout ) ) {
+	print ;
+	print "\t$touch" if $touch ;
+}

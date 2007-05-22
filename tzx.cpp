@@ -65,7 +65,7 @@ const byte * tzx_get_next_block( const byte * const block, const byte * const ta
 {
     hope( tape_end ) ;
     hope( block ) ;
-    
+
     if ( block >= tape_end ) {
         return NULL ;
     }
@@ -76,67 +76,20 @@ const byte * tzx_get_next_block( const byte * const block, const byte * const ta
     if ( header_size > static_cast< uint >( tape_end - block ) ) {
         return NULL ;
     }
-    
+
     const uint data_size = tzx_get_data_size( block ) ;
-    
+
     if ( data_size > static_cast< uint >( tape_end - block - header_size ) ) {
         return NULL ;
     }
-    
+
     return ( block + ( header_size + data_size ) ) ;
 }
-
-const byte * tzx_get_block( const byte * const tape_start, const byte * const tape_end, const uint index )
-{
-    hope( tape_start ) ;
-    hope( tape_end ) ;
-    
-    const byte * block = tape_start ;
-    
-    for ( uint i = 0 ; i < index ; i++ ) {
-        block = tzx_get_next_block( block, tape_end ) ;
-        if ( block == NULL ) {
-            break ;
-        }
-    }
-    
-    return block ;
-}
-
-uint tzx_get_block_index( const byte * const tape_start, const byte * const tape_end, const byte * const target_block )
-{
-    hope( tape_start ) ;
-    hope( tape_end ) ;
-    hope( target_block ) ;
-    
-    uint index = 0 ;
-
-    const byte * block = tape_start ;
-    
-    while ( block < tape_end ) {
-    
-        block = tzx_get_next_block( block, tape_end ) ;
-        
-        if ( block == NULL ) {
-            break ;
-        }
-        
-        if ( block == target_block ) {
-            break ;
-        }
-    
-        index++ ;
-    }
-    
-    return index ;
-}
-
-const byte * tzx_find_block( const byte * const tape_start, const byte * const tape_end, 
 
 void tzx_render_pulse( bool & level, const uint duration )
 {
     hope( duration < 0x80000000 ) ;
-    
+
     pzx_out( duration, level ) ;
     level = ! level ;
 }
@@ -174,31 +127,32 @@ void tzx_render_data(
 )
 {
     uint bit_count = 8 * data_size ;
-    
+
     if ( bits_in_last_byte <= 8 && bit_count >= 8 ) {
         bit_count -= 8 ;
         bit_count += bits_in_last_byte ;
     }
-    
+
     if ( bit_count > 0 ) {
 
         u16 s0[ 2 ] ;
         u16 s1[ 2 ] ;
-        
+
         s0[ 0 ] = little_endian< u16 >( bit_0_cycles_1 ) ;
         s0[ 1 ] = little_endian< u16 >( bit_0_cycles_2 ) ;
 
         s1[ 0 ] = little_endian< u16 >( bit_1_cycles_1 ) ;
         s1[ 1 ] = little_endian< u16 >( bit_1_cycles_2 ) ;
-        
+
         const uint tail_cycles = ( pause_length > 0 ? MILLISECOND_CYCLES : 0 ) ;
-        
+
         pzx_data( data, bit_count, level, 2, 2, s0, s1, tail_cycles ) ;
     }
-        
+
     if ( pause_length > 0 ) {
         level = false ;
         pzx_pause( pause_length * MILLISECOND_CYCLES, level ) ;
+        last_level = level ;
     }
 }
 
@@ -215,26 +169,19 @@ void tzx_render_data(
     tzx_render_data( level, data, data_size, bits_in_last_byte, bit_0_cycles, bit_0_cycles, bit_1_cycles, bit_1_cycles, pause_length ) ;
 }
 
-const byte * tzx_process_block(
+bool tzx_process_block(
     bool & level,
-    const byte * block,
+    uint & block_index,
+    const byte * const * const blocks
+    const uint block_count,
     const uint end_type,
-    const byte * const tape_start,
-    const byte * const tape_end,
 )
 {
-    hope( tape_start ) ;
-    hope( tape_end ) ;
-    hope( tape_start <= tape_end ) ;
+    hope( blocks ) ;
+    hope( block_index < block_count ) ;
+
+    const byte * block = blocks[ block_index++ ] ;
     hope( block ) ;
-    hope( block >= tape_start ) ;
-    hope( block <= tape_end ) ;
-
-    const byte * const next_block = tzx_get_next_block( block, tape_end ) ;
-
-    if ( next_block == NULL ) {
-        return NULL ;
-    }
 
     switch ( *block++ ) {
         case TZX_NORMAL_BLOCK:
@@ -274,13 +221,19 @@ const byte * tzx_process_block(
             const uint duration = GET2(0x00) ;
             level = false ;
             tzx_render_data( level, block + 0x08, data_size, GET1(0x04), duration, 0, 0, duration, GET2(0x2) ) ;
-            level = ! level ; // FIXME: last level, in case sample block is empty or there is just pause...
+            // FIXME: level is invalid unless there is a pause. it doesn't reflect the last bit.
             break ;
         }
         case TZX_CSW:
-            return NULL ;   // Not yet.
+        {
+            // FIXME
+            break ;
+        }
         case TZX_GDB:
-            return NULL ;   // Not yet.
+        {
+            // FIXME
+            break ;
+        }
         case TZX_SET_LEVEL:
         {
             level = ( GET1(0x04) != 0 ) ;
@@ -313,51 +266,81 @@ const byte * tzx_process_block(
         }
         case TZX_JUMP:
         {
-            // return tzx_find_block( tape_start, tape_end, block_index + (s16) GET2(0) ) ; // FIXME.
+            const sint offset = (s16) GET2(0) ;
+            block_index-- ;
+            block_index += offset ;
+            // FIXME: check it.
             break ;
         }
         case TZX_LOOP_BEGIN:
         {
-            break ; // FIXME.
+            const uint count = GET2(0x00) ;
+            const uint start_index = block_index ;
+            for ( uint i = 0 ; i < count ; i++ ) {
+                block_index = start_index ;
+                tzx_process_blocks( level, block_index, blocks, block_count, TZX_LOOP_END ) ;
+            }
+            break ;
         }
         case TZX_LOOP_END:
         {
-            if ( end_type != TZX_LOOP_END ) {
-                return NULL ;
+            if ( end_type == TZX_LOOP_END ) {
+                return false ;
+            }
+            else {
+
             }
             break ;
         }
         case TZX_CALL_SEQUENCE:
-            break ; // FIXME
+        {
+            const uint count = GET2(0x00) ;
+            const uint current_index = block_index - 1 ;
+            for ( uint i = 0 ; i < count ; i++ ) {
+                const sint offset = (s16) GET2(2+2*i) ;
+                tzx_process_blocks( level, current_index + offset, blocks, block_count, TZX_RETURN ) ;
+            }
+            block_index = current_index + 1 ;
+            break ;
+        }
         case TZX_RETURN:
         {
-            if ( end_type != TZX_RETURN ) {
-                return NULL ;
+            if ( end_type == TZX_RETURN ) {
+                return false ;
+            }
+            else {
+
             }
             break ;
         }
         case TZX_SELECT_BLOCK:
         {
+            // FIXME
             break ;
         }
         case TZX_TEXT_INFO:
         {
+            // FIXME
             break ;
         }
         case TZX_MESSAGE:
         {
+            // FIXME
             break ;
         }
         case TZX_ARCHIVE_INFO:
         {
+            // FIXME
             break ;
         }
         case TZX_HARDWARE_INFO:
         {
+            // FIXME
             break ;
         }
         case TZX_CUSTOM_INFO:
         {
+            // FIXME
             break ;
         }
         case TZX_GLUE:
@@ -374,34 +357,59 @@ const byte * tzx_process_block(
             break ;
         }
     }
-    
-    return next_block ;
+
+    return true ;
 }
 
-const byte * tzx_process_blocks(
+void tzx_process_blocks(
     bool & level,
-    const byte * const first_block,
-    const uint end_type,
-    const byte * const tape_start,
-    const byte * const tape_end,
+    uint & block_index,
+    const byte * const * const blocks,
+    const uint block_count,
+    const uint end_type
 )
 {
-    const byte * block = first_block ;
-
-    while ( block < tape_end ) {
-    
-        const uint block_type = *block ;
-    
-        block = tzx_process_block( level, block, end_type, tape_start, tape_end ) ;
-        
-        if ( block == NULL ) {
-            break ;
-        }
-        
-        if ( block_type == end_type ) {
+    while ( block_index < block_count ) {
+        if ( ! tzx_process_block( level, block_index, blocks, block_count, end_type ) ) {
             break ;
         }
     }
-    
-    return block ;
+}
+
+void tzx_render( const byte * const tape_start, const byte * const tape_end )
+{
+    hope( tape_start ) ;
+    hope( tape_end ) ;
+    hope( tape_start <= tape_end ) ;
+
+    // Create table of block starts.
+
+    const uint block_limit = 4096 ;
+    const byte * blocks[ block_limit ] ;
+    uint block_count = 0 ;
+
+    const byte * const block = tape_start ;
+
+    while ( block < tape_end ) {
+
+        blocks[ block_index ] = block ;
+
+        block = tzx_get_next_block( block, tape_end ) ;
+
+        if ( block == NULL ) {
+            break ;
+        }
+
+        if ( block_index == block_limit ) {
+            break ;
+        }
+
+        block_index++ ;
+    }
+
+    // Now process process each block in turn.
+
+    bool level = false ;
+    uint block_index = 0 ;
+    tzx_process_blocks( level, block_index, blocks, block_count, 0 ) ;
 }

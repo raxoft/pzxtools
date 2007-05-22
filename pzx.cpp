@@ -344,23 +344,25 @@ void pzx_data(
 
     pzx_flush() ;
 
-    // Write the header.
+    // Prepare the header.
 
     header_buffer.write_little< u32 >( ( initial_level << 31 ) | bit_count ) ;
     header_buffer.write_little< u16 >( tail_cycles ) ;
     header_buffer.write_little< u8 >( pulse_count_0 ) ;
     header_buffer.write_little< u8 >( pulse_count_1 ) ;
 
+    // Copy the sequences.
+
+    header_buffer.write( pulse_sequence_0, 2 * pulse_count_0 ) ;
+    header_buffer.write( pulse_sequence_1, 2 * pulse_count_1 ) ;
+
+    // Copy the bit stream data themselves.
+
+    header_buffer.write( data, ( bit_count + 7 ) / 8 ) ;
+
+    // Now write the entire block to the file.
+
     pzx_write_buffer( PZX_DATA, header_buffer ) ;
-
-    // Write the sequences.
-
-    pzx_write( pulse_sequence_0, 2 * pulse_count_0 ) ;
-    pzx_write( pulse_sequence_1, 2 * pulse_count_1 ) ;
-
-    // Write the bit stream data themselves.
-
-    pzx_write( data, ( bit_count + 7 ) / 8 ) ;
 }
 
 /**

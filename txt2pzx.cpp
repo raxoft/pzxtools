@@ -1,9 +1,8 @@
 // $Id$
 
-// TZX->PZX convertor.
+// TXT->PZX convertor.
 
 #include "pzx.h"
-#include "tzx.h"
 
 extern "C"
 int main( int argc, char * * argv )
@@ -76,7 +75,7 @@ int main( int argc, char * * argv )
 
     // Now let the TZX renderer render the output to PZX stream.
 
-    tzx_render( buffer.get_data(), buffer.get_data_end() ) ;
+//    tzx_render( buffer.get_data(), buffer.get_data_end() ) ;
 
     // Finally, close the PZX stream and make sure there were no errors.
 

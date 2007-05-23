@@ -1,9 +1,8 @@
 // $Id$
 
-// TZX->PZX convertor.
+// PZX->TXT convertor.
 
 #include "pzx.h"
-#include "tzx.h"
 
 extern "C"
 int main( int argc, char * * argv )
@@ -70,6 +69,7 @@ int main( int argc, char * * argv )
         fail( "unable to open output file" ) ;
     }
 
+#if 0
     // Bind the PZX stream to output file.
 
     pzx_open( output_file ) ;
@@ -81,6 +81,7 @@ int main( int argc, char * * argv )
     // Finally, close the PZX stream and make sure there were no errors.
 
     pzx_close() ;
+#endif
 
     if ( ferror( output_file ) != 0 || fclose( output_file ) != 0 ) {
         fail( "error while closing the output file" ) ;

@@ -56,7 +56,7 @@ void dump_data_line( FILE * const output_file, const byte * const data, const ui
 
     for ( uint i = 0 ; i < data_size ; i++ ) {
         const byte b = data[ i ] ;
-        if ( b >= 32 && b <= 126 ) {
+        if ( b > 32 && b < 127 ) {
             fprintf( output_file, ".%c", b ) ;
         }
         else {

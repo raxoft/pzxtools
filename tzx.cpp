@@ -320,8 +320,8 @@ void tzx_convert_info( const byte * const info, const uint info_size, const bool
 
         // Title is converted only when we are told so, otherwise it is ignored.
 
-        if ( type == 0x00 ) {
-            if ( title_only ) {
+        if ( title_only ) {
+            if ( type == 0x00 ) {
                 pzx_info( string, length ) ;
                 return ;
             }

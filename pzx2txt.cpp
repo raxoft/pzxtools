@@ -5,27 +5,122 @@
 #include "pzx.h"
 
 /**
+ * Fetch value of specified type from given data block.
+ */
+template< typename Type >
+Type fetch( const byte * & data, uint & data_size )
+{
+    hope( data ) ;
+
+    if ( sizeof( Type ) > data_size ) {
+        fail( "incomplete block detected" ) ;
+    }
+
+    const Type value = little_endian( * reinterpret_cast< const Type * >( data ) ) ;
+
+    data += sizeof( Type ) ;
+    data_size -= sizeof( Type ) ;
+
+    return value ;
+}
+
+/**
+ * Macros for convenient fetching of values from current block.
+ */
+//@{
+#define GET1()  fetch< u8 >( data, data_size )
+#define GET2()  fetch< u16 >( data, data_size )
+#define GET4()  fetch< u32 >( data, data_size )
+//@}
+
+void dump_string( const char * const prefix, const byte * const data, const uint data_size )
+{
+
+}
+
+void dump_strings( const char * const prefix,  const byte * const data, const uint data_size )
+{
+
+}
+
+void dump_data( const byte * const data, const uint data_size )
+{
+
+}
+
+/**
  * Dump given PZX block to given file.
  */
-void dump_block( FILE * const output_file, const uint tag, const void * data, const uint data_size )
+void dump_block( FILE * const output_file, const uint tag, const byte * data, uint data_size )
 {
     hope( data ) ;
 
     // Output block name.
 
-    std::fprintf( output_file, "TAG " ) ;
-    std::fwrite( &tag, 4, 1, output_file ) ;
-    std::fprintf( output_file, "\n" ) ;
-
     switch ( tag ) {
-        case PZX_HEADER:
-        case PZX_PULSES:
-        case PZX_DATA:
-        case PZX_PAUSE:
-        case PZX_STOP:
-        case PZX_BROWSE:
-        default:
+        case PZX_HEADER: {
+            const uint major = GET1() ;
+            const uint minor = GET1() ;
+            fprintf( output_file, "PZX %u.%u\n", major, minor ) ;
+            dump_strings( "INFO", data, data_size ) ;
+            break ;
+        }
+        case PZX_PULSES: {
+            while ( data_size > 0 ) {
+                uint count = 1 ;
+                uint duration = GET2() ;
+                if ( duration > 0x8000 ) {
+                    count = duration & 0x7FFF ;
+                    duration = GET2() ;
+                }
+                if ( duration >= 0x8000 ) {
+                    duration &= 0x7FFF ;
+                    duration <<= 16 ;
+                    duration |= GET2() ;
+                }
+                fprintf( output_file, "PULSE %u", duration ) ;
+                if ( count > 1 ) {
+                    fprintf( output_file, " %u", count ) ;
+                }
+                fprintf( output_file, "\n" ) ;
+            }
+            break ;
+        }
+        case PZX_DATA: {
+            uint bit_count = GET4() ;
+
+            fprintf( output_file, "DATA %u\n", ( bit_count >> 31 ) ) ;
+            bit_count &= 0x7FFFFFF ;
+
+            fprintf( output_file, "SIZE %u", ( bit_count / 8 ) ) ;
+            if ( ( bit_count & 7 ) != 0 ) {
+                fprintf( output_file, " %u", ( bit_count &7 ) ) ;
+            }
+            fprintf( output_file, "\n" ) ;
+
+            break ;
+        }
+        case PZX_PAUSE: {
+            const uint duration = GET4() ;
+            fprintf( output_file, "PAUSE %u %u\n", ( duration & 0x7FFFFFFF ), ( duration >> 31 ) ) ;
+            break ;
+        }
+        case PZX_STOP: {
+            const uint flags = GET2() ;
+            fprintf( output_file, "STOP %u\n", flags ) ;
+            break ;
+        }
+        case PZX_BROWSE: {
+            dump_string( "BROWSE", data, data_size ) ;
+            break ;
+        }
+        default: {
+            fprintf( output_file, "TAG " ) ;
+            fwrite( &tag, 4, 1, output_file ) ;
+            fprintf( output_file, "\n" ) ;
+            dump_data( data, data_size ) ;
             return ;
+        }
     }
 }
 

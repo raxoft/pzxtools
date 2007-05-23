@@ -48,7 +48,10 @@ private:
         hope( new_size > buffer_size ) ;
 
         buffer = static_cast< byte * >( std::realloc( buffer, new_size ) ) ;
-        hope( buffer ) ;
+
+        if ( buffer == NULL ) {
+            fail( "out of memory" ) ;
+        }
 
         buffer_size = new_size ;
     }
@@ -74,11 +77,24 @@ public:
             bytes_used += bytes_read ;
 
             if ( bytes_read != bytes_free ) {
-                return ( ferror( file ) == 0 ) ;
+                return ( std::ferror( file ) == 0 ) ;
             }
 
             reallocate( 2 * buffer_size ) ;
         }
+    }
+
+    uint read( FILE * const file, const uint size )
+    {
+        hope( file ) ;
+
+        if ( size > buffer_size ) {
+            reallocate( size ) ;
+        }
+
+        bytes_used = std::fread( buffer, 1, size, file ) ;
+
+        return ( std::ferror( file ) ? ~0 : bytes_used ) ;
     }
 
 public:

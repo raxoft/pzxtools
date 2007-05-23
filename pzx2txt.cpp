@@ -43,9 +43,42 @@ void dump_strings( const char * const prefix,  const byte * const data, const ui
 
 }
 
-void dump_data( const byte * const data, const uint data_size )
+/**
+ * Dump single data line to a file.
+ */
+void dump_data_line( FILE * const output_file, const byte * const data, const uint data_size )
 {
+    if ( data_size == 0 ) {
+        return ;
+    }
 
+    fprintf( output_file, "BODY " ) ;
+
+    for ( uint i = 0 ; i < data_size ; i++ ) {
+        const byte b = data[ i ] ;
+        if ( b >= 32 && b <= 126 ) {
+            fprintf( output_file, ".%c", b ) ;
+        }
+        else {
+            fprintf( output_file, "%02X", b ) ;
+        }
+    }
+
+    fprintf( output_file, "\n" ) ;
+}
+
+/**
+ * Dump data block to a file.
+ */
+void dump_data( FILE * const output_file, const byte * data, uint data_size )
+{
+    const uint limit = 48 ;
+    while ( data_size > limit ) {
+        dump_data_line( output_file, data, limit ) ;
+        data += limit ;
+        data_size -= limit ;
+    }
+    dump_data_line( output_file, data, data_size ) ;
 }
 
 /**
@@ -117,7 +150,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             }
             fprintf( output_file, "\n" ) ;
 
-            dump_data( data, data_size ) ;
+            dump_data( output_file, data, data_size ) ;
             return ;
         }
         case PZX_PAUSE: {
@@ -138,7 +171,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             fprintf( output_file, "TAG " ) ;
             fwrite( &tag, 4, 1, output_file ) ;
             fprintf( output_file, "\n" ) ;
-            dump_data( data, data_size ) ;
+            dump_data( output_file, data, data_size ) ;
             return ;
         }
     }

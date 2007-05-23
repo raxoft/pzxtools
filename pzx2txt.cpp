@@ -63,7 +63,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             const uint minor = GET1() ;
             fprintf( output_file, "PZX %u.%u\n", major, minor ) ;
             dump_strings( "INFO", data, data_size ) ;
-            break ;
+            return ;
         }
         case PZX_PULSES: {
             while ( data_size > 0 ) {
@@ -88,6 +88,9 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
         }
         case PZX_DATA: {
             uint bit_count = GET4() ;
+            uint tail_cycles = GET2() ;
+            uint pulse_count_0 = GET1() ;
+            uint pulse_count_1 = GET1() ;
 
             fprintf( output_file, "DATA %u\n", ( bit_count >> 31 ) ) ;
             bit_count &= 0x7FFFFFF ;
@@ -98,7 +101,24 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             }
             fprintf( output_file, "\n" ) ;
 
-            break ;
+            fprintf( output_file, "TAIL %u\n", tail_cycles ) ;
+
+            fprintf( output_file, "BIT0" ) ;
+            for ( uint i = 0 ; i < pulse_count_0 ; i++ ) {
+                const uint duration = GET2() ;
+                fprintf( output_file, " %u", duration ) ;
+            }
+            fprintf( output_file, "\n" ) ;
+
+            fprintf( output_file, "BIT1" ) ;
+            for ( uint i = 0 ; i < pulse_count_1 ; i++ ) {
+                const uint duration = GET2() ;
+                fprintf( output_file, " %u", duration ) ;
+            }
+            fprintf( output_file, "\n" ) ;
+
+            dump_data( data, data_size ) ;
+            return ;
         }
         case PZX_PAUSE: {
             const uint duration = GET4() ;
@@ -112,7 +132,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
         }
         case PZX_BROWSE: {
             dump_string( "BROWSE", data, data_size ) ;
-            break ;
+            return ;
         }
         default: {
             fprintf( output_file, "TAG " ) ;
@@ -121,6 +141,10 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             dump_data( data, data_size ) ;
             return ;
         }
+    }
+
+    if ( data_size > 0 ) {
+        warn( "excessive data (%u byte%s) at end of block detected", data_size, ( data_size > 1 ? "s" : "" ) ) ;
     }
 }
 

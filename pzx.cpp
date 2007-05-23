@@ -177,19 +177,6 @@ void pzx_store( const uint count, const uint duration )
     hope( count < 0x8000 ) ;
     hope( duration < 0x80000000 ) ;
 
-    // Here we can impose some limit on the size of the pulse buffer. This
-    // would likely be the case of applications which use static buffer or
-    // are saving directly to the PZX pulse stream, as they can't extend the
-    // pulse buffer forever. In our case we just use arbitrarily high limit.
-
-    const uint limit = 1024 * 1024 ;
-    if ( pulse_buffer.get_data_size() + 6 > limit ) {
-        if ( header_buffer.is_not_empty() ) {
-            pzx_write_buffer( PZX_HEADER, header_buffer ) ;
-        }
-        pzx_write_buffer( PZX_PULSES, pulse_buffer ) ;
-    }
-
     // Store the count if there were multiple pulses or the duration encoding requires that.
 
     if ( count > 1 || duration > 0xFFFF ) {

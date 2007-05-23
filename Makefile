@@ -17,7 +17,6 @@ tidy: clean
 	rm -rf $(PROGS)
 
 archive:
-	make dep
 	tar czvf ../tzx2pzx.tar.gz *.cpp *.h Makefile
 
 dep:

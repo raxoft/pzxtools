@@ -1,7 +1,7 @@
 
 CXXFLAGS = -g -DDEBUG -Wall
 #CXXFLAGS = -O2 -Wall
-#LDLIBS = -lm -lpthread
+#LDLIBS = -lm
 
 PROGS=tzx2pzx
 

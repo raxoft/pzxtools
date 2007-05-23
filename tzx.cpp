@@ -265,6 +265,89 @@ void tzx_render_pause( bool & level, const uint duration )
 }
 
 /**
+ * Get name of given info type.
+ */
+const char * tzx_get_info_name( const uint type )
+{
+    switch ( type ) {
+        case 0x00: return "Title" ;
+        case 0x01: return "Publisher" ;
+        case 0x02: return "Author" ;
+        case 0x03: return "Year" ;
+        case 0x04: return "Language" ;
+        case 0x05: return "Type" ;
+        case 0x06: return "Price" ;
+        case 0x07: return "Protection" ;
+        case 0x08: return "Origin" ;
+        case 0xFF: return "Comment" ;
+        default:   return "Info" ;
+    }
+}
+
+/**
+ * Convert info from archive info block and pass it to the output stream.
+ */
+void tzx_convert_info( const byte * const info, const uint info_size, const bool title_only )
+{
+    hope( info ) ;
+
+    // Fetch number of info strings.
+
+    const byte * p = info ;
+    const uint count = *p++ ;
+
+    // Iterate over all strings.
+
+    for ( uint i = 0 ; i < count ; i++ ) {
+
+        // Make sure we don't run away from the info block.
+
+        if ( p + 2 > info + info_size ) {
+            break ;
+        }
+
+        // Fetch the info type and string length.
+
+        const uint type = *p++ ;
+        const uint length = *p++ ;
+        const byte * const string = p ;
+
+        // Move to next string.
+
+        p += length ;
+
+        if ( p > info + info_size ) {
+            break ;
+        }
+
+        // Title is converted only when we are told so, otherwise it is ignored.
+
+        if ( type == 0x00 ) {
+            if ( title_only ) {
+                pzx_info( string, length ) ;
+                return ;
+            }
+            continue ;
+        }
+
+        // Anything else is converted verbatim.
+        //
+        // Note that the output should be in UTF-8, but we don't know what
+        // code page was used in TZX anyway, so we just let the user to fix
+        // it himself if he cares enough.
+
+        pzx_info( tzx_get_info_name( type ) ) ;
+        pzx_info( string, length ) ;
+    }
+
+    // If we haven't found any title, just make up some if required.
+
+    if ( title_only ) {
+        pzx_info( "Some tape" ) ;
+    }
+}
+
+/**
  * Set block index according to given relative offset.
  */
 bool tzx_set_block_index( uint & block_index, const uint next_index, const sint offset, const uint block_count )
@@ -365,7 +448,7 @@ bool tzx_process_block(
             const uint duration = GET2(0x00) ;
             level = false ;
             tzx_render_data( level, block + 0x08, data_size, GET1(0x04), duration, 0, 0, duration, MILLISECOND_CYCLES, GET2(0x2) ) ;
-            // FIXME: level is now invalid unless there was a pause, as it doesn't reflect the last bit output.
+            // FIXME: level is now incorrect unless there was a pause, as it doesn't reflect the last bit output.
             break ;
         }
         case TZX_CSW:
@@ -410,7 +493,7 @@ bool tzx_process_block(
         }
         case TZX_JUMP:
         {
-            tzx_set_block_index( block_index, block_index, (s16) GET2(0), block_count ) ;
+            tzx_set_block_index( block_index, block_index, (s16) GET2(0x00), block_count ) ;
             break ;
         }
         case TZX_LOOP_BEGIN:
@@ -436,7 +519,7 @@ bool tzx_process_block(
             const uint count = GET2(0x00) ;
             const uint next_index = block_index ;
             for ( uint i = 0 ; i < count ; i++ ) {
-                if ( ! tzx_set_block_index( block_index, next_index, (s16) GET2(2+2*i), block_count ) ) {
+                if ( ! tzx_set_block_index( block_index, next_index, (s16) GET2(0x02+2*i), block_count ) ) {
                     break ;
                 }
                 tzx_process_blocks( level, block_index, blocks, block_count, TZX_RETURN ) ;
@@ -469,8 +552,8 @@ bool tzx_process_block(
         }
         case TZX_ARCHIVE_INFO:
         {
-            // FIXME: use this to feed the header.
-            warn( "archive info block not supported yet" ) ;
+            tzx_convert_info( block + 2, data_size, true ) ;
+            tzx_convert_info( block + 2, data_size, false ) ;
             break ;
         }
         case TZX_HARDWARE_INFO:

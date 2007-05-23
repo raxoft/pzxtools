@@ -11,7 +11,7 @@ int main( int argc, char * * argv )
 {
     // Make sure the standard I/O is in binary mode.
 
-#if 0
+#ifdef _MSC_VER
     _setmode( _fileno( stdin ), _O_BINARY ) ;
     _setmode( _fileno( stdout ), _O_BINARY ) ;
 #endif

@@ -634,15 +634,14 @@ void tzx_render( const byte * const tape_start, const byte * const tape_end )
 
     // Create table of block starts.
 
-    const uint block_limit = 4096 ;
-    const byte * blocks[ block_limit ] ;
+    Buffer block_buffer ;
     uint block_count = 0 ;
 
     const byte * block = tape_start ;
 
     while ( block < tape_end ) {
 
-        blocks[ block_count ] = block ;
+        block_buffer.write( block ) ;
 
         block = tzx_get_next_block( block, tape_end ) ;
 
@@ -650,13 +649,10 @@ void tzx_render( const byte * const tape_start, const byte * const tape_end )
             break ;
         }
 
-        if ( block_count == block_limit ) {
-            warn( "too many TZX blocks encountered, the rest is ignored" ) ;
-            break ;
-        }
-
         block_count++ ;
     }
+
+    const byte * const * const blocks = block_buffer.get_typed_data< const byte * >() ;
 
     // Now process process each block in turn.
 

@@ -121,6 +121,12 @@ public:
         return buffer ;
     }
 
+    template< typename Type >
+    inline Type * get_typed_data( void ) const
+    {
+        return reinterpret_cast< Type * >( buffer ) ;
+    }
+
     inline byte * get_data_end( void ) const
     {
         return buffer + bytes_used ;

@@ -50,7 +50,7 @@ int main( int argc, char * * argv )
         fail( "unable to open input file" ) ;
     }
 
-    Buffer buffer( 256 * 1024 * 1024 ) ;
+    Buffer buffer( 256 * 1024 ) ;
 
     if ( ! buffer.read( input_file ) ) {
         fail( "error reading input file" ) ;

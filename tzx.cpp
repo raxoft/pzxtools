@@ -381,7 +381,8 @@ void tzx_process_blocks(
     uint & block_index,
     const byte * const * const blocks,
     const uint block_count,
-    const uint end_type
+    const uint end_type,
+    const uint nesting_level
 ) ;
 
 /**
@@ -392,7 +393,9 @@ bool tzx_process_block(
     uint & block_index,
     const byte * const * const blocks,
     const uint block_count,
-    const uint end_type
+    const uint end_type,
+    const uint nesting_level,
+    uint & jump_count
 )
 {
     hope( blocks ) ;
@@ -493,6 +496,7 @@ bool tzx_process_block(
         }
         case TZX_JUMP:
         {
+            jump_count++ ;
             tzx_set_block_index( block_index, block_index, (s16) GET2(0x00), block_count ) ;
             break ;
         }
@@ -502,7 +506,7 @@ bool tzx_process_block(
             const uint next_index = block_index ;
             for ( uint i = 0 ; i < count ; i++ ) {
                 block_index = next_index ;
-                tzx_process_blocks( level, block_index, blocks, block_count, TZX_LOOP_END ) ;
+                tzx_process_blocks( level, block_index, blocks, block_count, TZX_LOOP_END, nesting_level ) ;
             }
             break ;
         }
@@ -522,7 +526,7 @@ bool tzx_process_block(
                 if ( ! tzx_set_block_index( block_index, next_index, (s16) GET2(0x02+2*i), block_count ) ) {
                     break ;
                 }
-                tzx_process_blocks( level, block_index, blocks, block_count, TZX_RETURN ) ;
+                tzx_process_blocks( level, block_index, blocks, block_count, TZX_RETURN, nesting_level ) ;
             }
             block_index = next_index ;
             break ;
@@ -596,13 +600,24 @@ void tzx_process_blocks(
     uint & block_index,
     const byte * const * const blocks,
     const uint block_count,
-    const uint end_type
+    const uint end_type,
+    const uint nesting_level
 )
 {
+    if ( nesting_level > 10 ) {
+        warn( "too deep nesting detected - returning" ) ;
+    }
+
     // Simply process block by block, stopping when end block is encountered.
 
+    uint jump_count = 0 ;
+
     while ( block_index < block_count ) {
-        if ( ! tzx_process_block( level, block_index, blocks, block_count, end_type ) ) {
+        if ( ! tzx_process_block( level, block_index, blocks, block_count, end_type, nesting_level + 1, jump_count ) ) {
+            break ;
+        }
+        if ( jump_count > block_count ) {
+            warn( "too many jumps detected - stopping" ) ;
             break ;
         }
     }
@@ -647,5 +662,5 @@ void tzx_render( const byte * const tape_start, const byte * const tape_end )
 
     bool level = false ;
     uint block_index = 0 ;
-    tzx_process_blocks( level, block_index, blocks, block_count, 0 ) ;
+    tzx_process_blocks( level, block_index, blocks, block_count, 0, 0 ) ;
 }

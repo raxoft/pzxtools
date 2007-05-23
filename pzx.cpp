@@ -229,16 +229,23 @@ void pzx_pulse( const uint duration )
 
 /**
  * Append pulse of given duration and given pulse level to PZX pulse block.
- *
- * @note The @a duration must fit in 31 bits.
  */
 void pzx_out( const uint duration, const bool level )
 {
-    hope( duration < 0x80000000 ) ;
-
     // Zero duration doesn't extend anything.
 
     if ( duration == 0 ) {
+        return ;
+    }
+
+    // In case the duration is too long that it would cause overflow
+    // problems, process it as multiple pulses of same level.
+
+    const uint limit = 0x7FFFFFFF ;
+
+    if ( duration > limit ) {
+        pzx_out( limit, level ) ;
+        pzx_out( duration - limit, level ) ;
         return ;
     }
 
@@ -259,7 +266,6 @@ void pzx_out( const uint duration, const bool level )
     // can handle at maximum, use zero pulse to concatenate multiple pulses
     // to create pulse of required duration.
 
-    const uint limit = 0x7FFFFFFF ;
     if ( last_duration > limit ) {
         pzx_pulse( limit ) ;
         pzx_pulse( 0 ) ;

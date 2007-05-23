@@ -121,8 +121,6 @@ const byte * tzx_get_next_block( const byte * const block, const byte * const ta
  */
 void tzx_render_pulse( bool & level, const uint duration )
 {
-    hope( duration < 0x80000000 ) ;
-
     // Send the pulse down the PZX stream.
 
     pzx_out( duration, level ) ;

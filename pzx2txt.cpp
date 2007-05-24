@@ -10,9 +10,14 @@
 namespace {
 
 /**
- * Flag set when data should be dumped as ASCII characters.
+ * Flag set when data should be dumped as ASCII characters when possible.
  */
 bool option_dump_ascii ;
+
+/**
+ * Flag set when dumping of content of DATA blocks should be suppresed.
+ */
+bool option_skip_data ;
 
 } ;
 
@@ -135,6 +140,10 @@ void dump_data_line( FILE * const output_file, const byte * const data, const ui
  */
 void dump_data( FILE * const output_file, const byte * data, uint data_size )
 {
+    if ( option_skip_data ) {
+        return ;
+    }
+
     const uint limit = 48 ;
     while ( data_size > limit ) {
         dump_data_line( output_file, data, limit ) ;
@@ -151,8 +160,6 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
 {
     hope( data ) ;
 
-    // Output block name.
-
     switch ( tag ) {
         case PZX_HEADER: {
             const uint major = GET1() ;
@@ -162,6 +169,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             return ;
         }
         case PZX_PULSES: {
+            fprintf( output_file, "PULSES\n" ) ;
             while ( data_size > 0 ) {
                 uint count = 1 ;
                 uint duration = GET2() ;
@@ -213,6 +221,10 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             }
             fprintf( output_file, "\n" ) ;
 
+            if ( data_size != ( ( bit_count + 7 ) / 8 ) ) {
+                warn( "bit count %u does not match the actual data size %u", bit_count, data_size ) ;
+            }
+
             dump_data( output_file, data, data_size ) ;
             return ;
         }
@@ -234,6 +246,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             fprintf( output_file, "TAG " ) ;
             fwrite( &tag, 4, 1, output_file ) ;
             fprintf( output_file, "\n" ) ;
+            fprintf( output_file, "SIZE %u\n", data_size ) ;
             dump_data( output_file, data, data_size ) ;
             return ;
         }
@@ -279,6 +292,10 @@ int main( int argc, char * * argv )
             }
             case 'a': {
                 option_dump_ascii = true ;
+                break ;
+            }
+            case 'd': {
+                option_skip_data = true ;
                 break ;
             }
             default: {
@@ -337,20 +354,24 @@ int main( int argc, char * * argv )
 
         // Read in header of the next block, if there is any.
 
-        switch ( buffer.read( input_file, 8 ) ) {
-            case 8: {
-                header = buffer.get_typed_data< u32 >() ;
-                continue ;
-            }
-            case 0: {
-                break ;
-            }
-            default: {
-                fail( "error reading block header" ) ;
-            }
+        const uint bytes_read = buffer.read( input_file, 8 ) ;
+        header = buffer.get_typed_data< u32 >() ;
+
+        // Stop if there is nothing more.
+
+        if ( bytes_read == 0 ) {
+            break ;
         }
 
-        break ;
+        // Check for errors.
+
+        if ( bytes_read != 8 ) {
+            fail( "error reading block header" ) ;
+        }
+
+        // Separate blocks with empty line.
+
+        fprintf( output_file, "\n" ) ;
     }
 
     // Close both input and output files and make sure there were no errors.

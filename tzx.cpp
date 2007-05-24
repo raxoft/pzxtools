@@ -327,6 +327,9 @@ void tzx_convert_info( const byte * const info, const uint info_size, const bool
             }
             continue ;
         }
+        else if ( type == 0x00 ) {
+            continue ;
+        }
 
         // Anything else is converted verbatim.
         //

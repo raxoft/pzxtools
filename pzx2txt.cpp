@@ -5,6 +5,18 @@
 #include "pzx.h"
 
 /**
+ * Global options.
+ */
+namespace {
+
+/**
+ * Flag set when data should be dumped as ASCII characters.
+ */
+bool option_dump_ascii ;
+
+} ;
+
+/**
  * Fetch value of specified type from given data block.
  */
 template< typename Type >
@@ -33,14 +45,40 @@ Type fetch( const byte * & data, uint & data_size )
 #define GET4()  fetch< u32 >( data, data_size )
 //@}
 
-void dump_string( const char * const prefix, const byte * const data, const uint data_size )
+/**
+ * Dump single string to a file.
+ */
+void dump_string( FILE * const output_file, const char * const prefix, const byte * const data, const uint data_size )
 {
+    fprintf( output_file, "%s ", prefix ) ;
 
+    for ( uint i = 0 ; i < data_size ; i++ ) {
+        const byte b = data[ i ] ;
+        if ( b > 32 && b < 127 ) {
+            fprintf( output_file, ".%c", b ) ;
+        }
+        else {
+            fprintf( output_file, "%02X", b ) ;
+        }
+    }
+
+    fprintf( output_file, "\n" ) ;
 }
 
-void dump_strings( const char * const prefix,  const byte * const data, const uint data_size )
+/**
+ * Dump strings separated with null characters to a file.
+ */
+void dump_strings( FILE * const output_file, const char * const prefix, const byte * data, uint data_size )
 {
-
+    const byte * const end = data + data_size ;
+    while ( data < end ) {
+        const byte * const string = data ;
+        while ( data < end && *data != 0 ) {
+            data++ ;
+        }
+        dump_string( output_file, prefix, string, data - string ) ;
+        data++ ;
+    }
 }
 
 /**
@@ -56,7 +94,7 @@ void dump_data_line( FILE * const output_file, const byte * const data, const ui
 
     for ( uint i = 0 ; i < data_size ; i++ ) {
         const byte b = data[ i ] ;
-        if ( b > 32 && b < 127 ) {
+        if ( option_dump_ascii && b > 32 && b < 127 ) {
             fprintf( output_file, ".%c", b ) ;
         }
         else {
@@ -95,7 +133,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             const uint major = GET1() ;
             const uint minor = GET1() ;
             fprintf( output_file, "PZX %u.%u\n", major, minor ) ;
-            dump_strings( "INFO", data, data_size ) ;
+            dump_strings( output_file, "INFO", data, data_size ) ;
             return ;
         }
         case PZX_PULSES: {
@@ -126,13 +164,13 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             uint pulse_count_1 = GET1() ;
 
             fprintf( output_file, "DATA %u\n", ( bit_count >> 31 ) ) ;
-            bit_count &= 0x7FFFFFF ;
 
-            fprintf( output_file, "SIZE %u", ( bit_count / 8 ) ) ;
+            bit_count &= 0x7FFFFFFF ;
+
+            fprintf( output_file, "SIZE %u\n", ( bit_count / 8 ) ) ;
             if ( ( bit_count & 7 ) != 0 ) {
-                fprintf( output_file, " %u", ( bit_count &7 ) ) ;
+                fprintf( output_file, "BITS %u\n", ( bit_count & 7 ) ) ;
             }
-            fprintf( output_file, "\n" ) ;
 
             fprintf( output_file, "TAIL %u\n", tail_cycles ) ;
 
@@ -164,7 +202,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             break ;
         }
         case PZX_BROWSE: {
-            dump_string( "BROWSE", data, data_size ) ;
+            dump_string( output_file, "BROWSE", data, data_size ) ;
             return ;
         }
         default: {
@@ -212,6 +250,10 @@ int main( int argc, char * * argv )
                     fail( "multiple output file names specified" ) ;
                 }
                 output_name = argv[ ++i ] ;
+                break ;
+            }
+            case 'a': {
+                option_dump_ascii = true ;
                 break ;
             }
             default: {

@@ -50,19 +50,44 @@ Type fetch( const byte * & data, uint & data_size )
  */
 void dump_string( FILE * const output_file, const char * const prefix, const byte * const data, const uint data_size )
 {
-    fprintf( output_file, "%s ", prefix ) ;
+    fprintf( output_file, "%s \"", prefix ) ;
 
     for ( uint i = 0 ; i < data_size ; i++ ) {
         const byte b = data[ i ] ;
-        if ( b > 32 && b < 127 ) {
-            fprintf( output_file, ".%c", b ) ;
+
+        switch ( b ) {
+            case '\\':
+            case '"':
+            {
+                fprintf( output_file, "\\%c", b ) ;
+                continue ;
+            }
+            case '\n':
+            {
+                fprintf( output_file, "\\n" ) ;
+                continue ;
+            }
+            case '\r':
+            {
+                fprintf( output_file, "\\r" ) ;
+                continue ;
+            }
+            case '\t':
+            {
+                fprintf( output_file, "\\t" ) ;
+                continue ;
+            }
         }
-        else {
-            fprintf( output_file, "%02X", b ) ;
+
+        if ( b < 32 ) {
+            fprintf( output_file, "\\x%02X", b ) ;
+            continue ;
         }
+
+        fprintf( output_file, "%c", b ) ;
     }
 
-    fprintf( output_file, "\n" ) ;
+    fprintf( output_file, "\"\n" ) ;
 }
 
 /**

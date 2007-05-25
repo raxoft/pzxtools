@@ -4,13 +4,22 @@
 
 #include "pzx.h"
 
+/**
+ * Process PZX text dump lines.
+ */
+void process_lines( const void * const lines, const uint size )
+{
+}
+
+/**
+ * Convert given PZX text dump to PZX file.
+ */
 extern "C"
 int main( int argc, char * * argv )
 {
-    // Make sure the standard I/O is in binary mode.
+    // Make sure the standard output is in binary mode.
 
 #ifdef _MSC_VER
-    _setmode( _fileno( stdin ), _O_BINARY ) ;
     _setmode( _fileno( stdout ), _O_BINARY ) ;
 #endif
 
@@ -42,6 +51,8 @@ int main( int argc, char * * argv )
     }
 
     // Now read in the input file.
+    //
+    // Note that we could do that line by line, but why bother.
 
     FILE * const input_file = ( input_name ? fopen( input_name, "rb" ) : stdin ) ;
     if ( input_file == NULL ) {
@@ -56,12 +67,6 @@ int main( int argc, char * * argv )
 
     fclose( input_file ) ;
 
-    // Make sure it is the TZX file.
-
-    if ( buffer.get_data_size() < 10 || std::memcmp( buffer.get_data(), "ZXTape!\x1a", 8 ) != 0 ) {
-        fail( "input is not a TZX file" ) ;
-    }
-
     // Open the output file.
 
     FILE * const output_file = ( output_name ? fopen( output_name, "wb" ) : stdout ) ;
@@ -73,9 +78,9 @@ int main( int argc, char * * argv )
 
     pzx_open( output_file ) ;
 
-    // Now let the TZX renderer render the output to PZX stream.
+    // Now process line by line and pass the output to the PZX stream.
 
-//    tzx_render( buffer.get_data(), buffer.get_data_end() ) ;
+    process_lines( buffer.get_data(), buffer.get_data_size() ) ;
 
     // Finally, close the PZX stream and make sure there were no errors.
 

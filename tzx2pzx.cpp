@@ -5,6 +5,9 @@
 #include "pzx.h"
 #include "tzx.h"
 
+/**
+ * Convert given TZX file to PZX file.
+ */
 extern "C"
 int main( int argc, char * * argv )
 {

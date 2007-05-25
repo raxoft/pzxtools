@@ -60,6 +60,8 @@ void dump_string( FILE * const output_file, const char * const prefix, const byt
     for ( uint i = 0 ; i < data_size ; i++ ) {
         const byte b = data[ i ] ;
 
+        // Escape special characters.
+
         switch ( b ) {
             case '\\':
             case '"':
@@ -84,10 +86,15 @@ void dump_string( FILE * const output_file, const char * const prefix, const byt
             }
         }
 
+        // Any other control characters are printed in hex.
+
         if ( b < 32 ) {
             fprintf( output_file, "\\x%02X", b ) ;
             continue ;
         }
+
+        // Anything else is printed verbatim. Note that this includes any characters
+        // greater than 127, as the strings are supposed to be in UTF-8 encoding.
 
         fprintf( output_file, "%c", b ) ;
     }
@@ -258,7 +265,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
 }
 
 /**
- * Convert given PZX file to TXT dump.
+ * Convert given PZX file to PZX text dump.
  */
 extern "C"
 int main( int argc, char * * argv )

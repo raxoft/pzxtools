@@ -335,7 +335,7 @@ int main( int argc, char * * argv )
 
     // Only then open the output file.
 
-    FILE * const output_file = ( output_name ? fopen( output_name, "wb" ) : stdout ) ;
+    FILE * const output_file = ( output_name ? fopen( output_name, "w" ) : stdout ) ;
     if ( output_file == NULL ) {
         fail( "unable to open output file" ) ;
     }

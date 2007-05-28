@@ -85,7 +85,7 @@ void pzx_write( const void * const data, const uint size )
 
     // Just write everything, freaking out in case of problems.
 
-    if ( std::fwrite( data, size, 1, output_file ) != 1 ) {
+    if ( std::fwrite( data, 1, size, output_file ) != size ) {
         fail( "error writing to file" ) ;
     }
 }

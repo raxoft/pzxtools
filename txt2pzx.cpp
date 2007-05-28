@@ -4,7 +4,18 @@
 
 #include "pzx.h"
 
+#include <cstring>
+#include <cerrno>
+
+/**
+ * Global stuff.
+ */
 namespace {
+
+/**
+ * Line tags.
+ */
+//@{
 
 #define TAG_NAME(a,b,c,d)   ((a)<<24|(b)<<16|(c)<<8|(d)|0x20202020)
 
@@ -21,8 +32,92 @@ const uint TAG_BODY         = TAG_NAME('B','O','D','Y') ;
 const uint TAG_PAUSE        = TAG_NAME('P','A','U','S') ;
 const uint TAG_STOP         = TAG_NAME('S','T','O','P') ;
 const uint TAG_BROWSE       = TAG_NAME('B','R','O','W') ;
+const uint TAG_TAG          = TAG_NAME('T','A','G',' ') ;
+
+//@}
+
+/**
+ * Buffers and variables used for collecting various information about current block.
+ */
+//@{
+
+Buffer data_buffer ;
+Buffer bit_0_buffer ;
+Buffer bit_1_buffer ;
+uint tail_cycles ;
+uint expected_data_size ;
+uint extra_bit_count ;
+bool output_level ;
+uint unknown_tag ;
+
+//@}
+
+/**
+ * Flag set when pulse sequences should be stored exactly as they were specified.
+ */
+bool option_preserve_pulses ;
 
 } ;
+
+/**
+ * Parse integral argument.
+ */
+bool parse_number( uint & number, const char * & string, const uint maximum = 0, const char * const what = NULL )
+{
+    hope( string ) ;
+
+    // Choose base ourselves, as we don't want the octal behavior.
+
+    uint base = 10 ;
+
+    if ( string[ 0 ] == '0' ) {
+        switch ( string[ 1 ] ) {
+            case 'x':
+            case 'X':
+            {
+                base = 16 ;
+                string += 2 ;
+                break ;
+            }
+            case 'b':
+            case 'B':
+            {
+                base = 2 ;
+                string += 2 ;
+                break ;
+            }
+        }
+    }
+
+    // Convert the number.
+
+    errno = 0 ;
+    char * end = NULL ;
+
+    const unsigned long result = strtoul( string, &end, base ) ;
+
+    // Deal with errors.
+
+    if ( ( string == end ) || ( errno == ERANGE ) ) {
+        if ( what ) {
+            warn( "invalid %s encountered", what ) ;
+        }
+        return false ;
+    }
+
+    if ( maximum > 0 && result > maximum ) {
+        warn( "%s out of range", what ? what : "value" ) ;
+        return false ;
+    }
+
+    // Return the result otherwise.
+
+    number = result ;
+
+    string = end + strspn( end, " \t" ) ;
+
+    return true ;
+}
 
 /**
  * Parse string argument.
@@ -37,9 +132,102 @@ const char * parse_string( const char * const string )
 }
 
 /**
+ * Parse string argument.
+ */
+void parse_data_line( const char * const string )
+{
+    hope( string ) ;
+
+
+    data_buffer.write< u8 >( 0xFF ) ;
+    // FIXME
+}
+
+/**
+ * Finish current block.
+ */
+void finish_block( uint & tag, const uint new_tag )
+{
+    // Flush the previously buffered data.
+
+    pzx_flush() ;
+
+    // Process the gathered data.
+
+    switch ( tag ) {
+        case TAG_DATA:
+        {
+            uint data_size = data_buffer.get_data_size() ;
+            if ( data_size > 0x80000000 / 8 ) {
+                fail( "the data block is too big" ) ;
+            }
+
+            uint bit_count = 8 * data_size ;
+            if ( extra_bit_count > 0 && bit_count > 0 ) {
+                bit_count -= 8 ;
+                bit_count += extra_bit_count ;
+            }
+            if ( bit_count == 0 ) {
+                fail( "empty data block" ) ;
+            }
+            if ( expected_data_size > 0 && ( bit_count / 8 ) != expected_data_size ) {
+                warn( "the specified byte size %u doesn't match the actual size %u", expected_data_size, bit_count / 8 ) ;
+            }
+
+            const uint pulse_count_0 = bit_0_buffer.get_data_size() / 2 ;
+            const uint pulse_count_1 = bit_1_buffer.get_data_size() / 2 ;
+
+            if ( pulse_count_0 == 0 || pulse_count_1 == 0 ) {
+                fail( "unspecified bit sequence" ) ;
+            }
+            if ( pulse_count_0 > 0xFF || pulse_count_1 > 0xFF ) {
+                fail( "bit sequence is too big" ) ;
+            }
+
+            pzx_data(
+                data_buffer.get_data(),
+                bit_count,
+                output_level,
+                pulse_count_0,
+                pulse_count_1,
+                bit_0_buffer.get_typed_data< u16 >(),
+                bit_1_buffer.get_typed_data< u16 >(),
+                tail_cycles
+            ) ;
+
+            data_buffer.clear() ;
+            bit_0_buffer.clear() ;
+            bit_1_buffer.clear() ;
+
+            expected_data_size = 0 ;
+            extra_bit_count = 0 ;
+            tail_cycles = 0 ;
+            output_level = false ;
+
+            break ;
+        }
+        case TAG_TAG:
+        {
+            const uint data_size = data_buffer.get_data_size() ;
+            if ( expected_data_size > 0 && data_size != expected_data_size ) {
+                warn( "the specified byte size %u doesn't match the actual size %u", expected_data_size, data_size ) ;
+            }
+            pzx_write_buffer( unknown_tag, data_buffer ) ;
+            expected_data_size = 0 ;
+            break ;
+        }
+    }
+
+    // Remember new block.
+
+    tag = new_tag ;
+}
+
+
+/**
  * Process single PZX text dump line.
  */
-void process_line( const char * const line )
+void process_line( uint & last_block_tag, const char * const line )
 {
     hope( line ) ;
     hope( *line ) ;
@@ -71,6 +259,7 @@ void process_line( const char * const line )
 
     switch ( tag ) {
         case TAG_HEADER: {
+            finish_block( last_block_tag, tag ) ;
             break ;
         }
         case TAG_INFO:
@@ -80,47 +269,114 @@ void process_line( const char * const line )
         }
         case TAG_PULSE:
         {
+            // Start new sequence if necessary.
+
+            uint duration ;
+            if ( ! parse_number( duration, s ) ) {
+                finish_block( last_block_tag, tag ) ;
+                output_level = false ;
+                break ;
+            }
+
+            // Fetch the optional count, too.
+
+            uint count = 1 ;
+            parse_number( count, s ) ;
+
+            // Store the pulse sequence as specified if requested and possible.
+
+            if ( option_preserve_pulses ) {
+                if ( count < 0x8000 && duration < 0x8000000 ) {
+                    pzx_store( count, duration ) ;
+                    break ;
+                }
+                warn( "pulse values %u*%u are out of range to be stored as they are", duration, count ) ;
+            }
+
+            // Otherwise let the output stream process each pulse as needed.
+
+            for ( uint i = 0 ; i < count ; i++ ) {
+                pzx_out( duration, output_level ) ;
+                output_level = ! output_level ;
+            }
             break ;
         }
         case TAG_DATA:
         {
+            finish_block( last_block_tag, tag ) ;
+
+            uint level = 0 ;
+            parse_number( level, s, 1, "initial pulse level" ) ;
+            output_level = ( level != 0 ) ;
+
             break ;
         }
         case TAG_SIZE:
         {
+            parse_number( expected_data_size, s, 0, "byte size" ) ;
             break ;
         }
         case TAG_BITS:
         {
+            parse_number( extra_bit_count, s, 8, "extra bit count" ) ;
             break ;
         }
         case TAG_BIT0:
         {
+            uint duration ;
+            while ( parse_number( duration, s, 0xFFFF ) ) {
+                bit_0_buffer.write( little_endian< u16 >( duration ) ) ;
+            }
             break ;
         }
         case TAG_BIT1:
         {
+            uint duration ;
+            while ( parse_number( duration, s, 0xFFFF ) ) {
+                bit_1_buffer.write( little_endian< u16 >( duration ) ) ;
+            }
             break ;
         }
         case TAG_TAIL:
         {
+            parse_number( tail_cycles, s, 0xFFFF, "tail pulse duration" ) ;
             break ;
         }
         case TAG_BODY:
         {
+            parse_data_line( s ) ;
             break ;
         }
         case TAG_PAUSE:
         {
+            finish_block( last_block_tag, tag ) ;
+
+            uint duration = 1 ;
+            parse_number( duration, s, 0x7FFFFFFF, "pause duration" ) ;
+            uint level = 0 ;
+            parse_number( level, s, 1, "pause level" ) ;
+
+            pzx_pause( duration, level ) ;
             break ;
         }
         case TAG_STOP:
         {
+            finish_block( last_block_tag, tag ) ;
             break ;
         }
         case TAG_BROWSE:
         {
+            finish_block( last_block_tag, tag ) ;
             pzx_browse( parse_string( s ) ) ;
+            break ;
+        }
+        case TAG_TAG:
+        {
+            finish_block( last_block_tag, tag ) ;
+            if ( strcspn( s, " \t" ) != 4 ) {
+                fail( "invalid tag name %s", s ) ;
+            }
+            unknown_tag = PZX_TAG( s[0], s[1], s[2], s[3] ) ;
             break ;
         }
         default: {
@@ -151,6 +407,8 @@ void process_lines( Buffer & buffer )
 
     // Now process line by line.
 
+    uint last_block_tag = 0 ;
+
     for ( ; ; ) {
 
         // Skip empty lines and leading whitespace.
@@ -174,8 +432,12 @@ void process_lines( Buffer & buffer )
 
         // Now process it.
 
-        process_line( line ) ;
+        process_line( last_block_tag, line ) ;
     }
+
+    // Finish the last block.
+
+    finish_block( last_block_tag, 0 ) ;
 }
 
 /**
@@ -209,6 +471,10 @@ int main( int argc, char * * argv )
                     fail( "multiple output file names specified" ) ;
                 }
                 output_name = argv[ ++i ] ;
+                break ;
+            }
+            case 'p': {
+                option_preserve_pulses = true ;
                 break ;
             }
             default: {

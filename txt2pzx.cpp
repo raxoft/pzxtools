@@ -25,6 +25,18 @@ const uint TAG_BROWSE       = TAG_NAME('B','R','O','W') ;
 } ;
 
 /**
+ * Parse string argument.
+ */
+const char * parse_string( const char * const string )
+{
+    hope( string ) ;
+
+    // FIXME
+
+    return string ;
+}
+
+/**
  * Process single PZX text dump line.
  */
 void process_line( const char * const line )
@@ -42,29 +54,75 @@ void process_line( const char * const line )
     tag <<= 8 ;
     tag |= *s++ ;
     tag <<= 8 ;
-    tag |= *s++ ;
+    tag |= *s ;
 
     // Make it lowercase, and convert end of line to space as well.
 
     tag |= 0x20202020 ;
 
+    // Find the first argument.
+
+    s += strcspn( s, " \t" ) ;
+    s += strspn( s, " \t" ) ;
+
     // Process the line according to the line tag.
+    //
+    // Note that we don't really care what the rest of the tag is.
 
     switch ( tag ) {
-        case TAG_HEADER:
+        case TAG_HEADER: {
+            break ;
+        }
         case TAG_INFO:
+        {
+            pzx_info( parse_string( s ) ) ;
+            break ;
+        }
         case TAG_PULSE:
+        {
+            break ;
+        }
         case TAG_DATA:
+        {
+            break ;
+        }
         case TAG_SIZE:
+        {
+            break ;
+        }
         case TAG_BITS:
+        {
+            break ;
+        }
         case TAG_BIT0:
+        {
+            break ;
+        }
         case TAG_BIT1:
+        {
+            break ;
+        }
         case TAG_TAIL:
+        {
+            break ;
+        }
         case TAG_BODY:
+        {
+            break ;
+        }
         case TAG_PAUSE:
+        {
+            break ;
+        }
         case TAG_STOP:
+        {
+            break ;
+        }
         case TAG_BROWSE:
-            return ;
+        {
+            pzx_browse( parse_string( s ) ) ;
+            break ;
+        }
         default: {
             fail( "invalid line %s", line ) ;
         }

@@ -145,25 +145,27 @@ void pzx_header( const void * const data, const uint size )
 
 /**
  * Append given amount of characters from given string to PZX header block.
- *
- * @note The input string doesn't have to be null terminated, and
- * the output is automatically null terminated.
  */
 void pzx_info( const void * const string, const uint length )
 {
+    // Separate multiple strings with zero byte.
+
+    if ( header_buffer.get_data_size() > 2 ) {
+        header_buffer.write< u8 >( 0 ) ;
+    }
+
+    // Write the string itself.
+
     pzx_header( string, length ) ;
-    header_buffer.write< u8 >( 0 ) ;
 }
 
 /**
  * Append given null terminated string to PZX header block.
- *
- * @note The output string is null terminated as well.
  */
 void pzx_info( const char * const string )
 {
     hope( string ) ;
-    pzx_header( string, std::strlen( string ) + 1 ) ;
+    pzx_info( string, std::strlen( string ) ) ;
 }
 
 /**

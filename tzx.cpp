@@ -208,10 +208,14 @@ void tzx_render_data(
     }
 
     // Now if there was some pause specified, output it as well.
+    // However don't output the pause if we have already used the tail pulse for that
+    // and the pause was short enough.
 
     if ( pause_length > 0 ) {
         level = false ;
-        pzx_pause( pause_length * MILLISECOND_CYCLES, level ) ;
+        if ( tail_cycles == 0 || pause_length > 1 ) {
+            pzx_pause( pause_length * MILLISECOND_CYCLES, level ) ;
+        }
     }
 }
 
@@ -260,6 +264,105 @@ void tzx_render_pause( bool & level, const uint duration )
     // Now output the low pulse pause of given duration.
 
     pzx_pause( duration * MILLISECOND_CYCLES, level ) ;
+}
+
+/**
+ * Decode GDB pilot pulses and send them to the output stream.
+ */
+void tzx_render_gdb_pilot(
+    bool & level,
+    const byte * const data,
+    const uint pulse_count,
+    const byte * const table,
+    const uint symbol_count,
+    const uint symbol_pulses
+)
+{
+}
+
+/**
+ * Send the GDB block to the output stream.
+ */
+void tzx_render_gdb( bool & level, const byte * const block, const uint block_size )
+{
+    if ( block_size < 0x12 ) {
+        warn( "TZX GDB block is too small" ) ;
+        return ;
+    }
+
+    const byte * const block_end = ( block + 4 + block_size ) ;
+
+    // Precompute the needed values.
+
+    const uint pause_length = GET2(0x04) ;
+
+    const uint pilot_symbols = GET4(0x06) ;
+    const uint pilot_symbol_pulses = GET1(0x0A) ;
+    const uint pilot_symbol_count = GET1(0x0B) ? GET1(0x0B) : 256 ;
+
+    const uint data_symbols = GET4(0x0C) ;
+    const uint data_symbol_pulses = GET1(0x10) ;
+    const uint data_symbol_count = GET1(0x11) ? GET1(0x11) : 256 ;
+
+    uint data_symbol_bits = 1 ;
+    while( data_symbol_count > ( 1u << data_symbol_bits ) ) {
+        data_symbol_bits++ ;
+    }
+
+    // Compute sizes and positions of the tables and streams.
+
+    const uint pilot_table_size = ( pilot_symbols ? ( pilot_symbol_count * ( pilot_symbol_pulses * 2 + 1 ) ) : 0 ) ;
+    const uint pilot_stream_size = ( pilot_symbols * 3 ) ;
+
+    const uint data_table_size = ( data_symbols ? ( data_symbol_count * ( data_symbol_pulses * 2 + 1 ) ) : 0 ) ;
+    const uint data_stream_size = ( ( ( data_symbols * data_symbol_bits ) + 7 ) / 8 ) ;
+
+    const byte * const pilot_table = block + 0x12 ;
+    const byte * const pilot_stream = pilot_table + pilot_table_size ;
+
+    const byte * const data_table = pilot_stream + pilot_stream_size ;
+    const byte * const data_stream = data_table + data_table_size ;
+
+    const byte * const end = data_stream + data_stream_size ;
+
+#if 0
+    warn( "block size %u", block_size ) ;
+    warn( "pilot symbols %u", pilot_symbols ) ;
+    warn( "pilot symbol pulses %u", pilot_symbol_pulses ) ;
+    warn( "pilot symbol count %u", pilot_symbol_count ) ;
+    warn( "data symbols %u", data_symbols ) ;
+    warn( "data symbol pulses %u", data_symbol_pulses ) ;
+    warn( "data symbol count %u", data_symbol_count ) ;
+    warn( "pilot table size %u", pilot_table_size ) ;
+    warn( "pilot stream size %u", pilot_stream_size ) ;
+    warn( "data table size %u", data_table_size ) ;
+    warn( "data stream size %u", data_stream_size ) ;
+    warn( "total %u", end - block  ) ;
+#endif
+
+    // Verify the block size.
+
+    if (
+        block < pilot_table &&
+        pilot_table <= pilot_stream &&
+        pilot_stream <= data_table &&
+        data_table <= data_stream &&
+        data_stream <= end &&
+        end <= block_end
+
+    ) {
+        if ( end != block_end ) {
+            warn( "TZX GDB block contains unused data" ) ;
+        }
+    }
+    else {
+        warn( "TZX GDB block has invalid size" ) ;
+        return ;
+    }
+
+    tzx_render_gdb_pilot( level, pilot_stream, pilot_symbols, pilot_table, pilot_symbol_count, pilot_symbol_pulses ) ;
+
+    // FIXME the rest.
 }
 
 /**
@@ -462,7 +565,7 @@ bool tzx_process_block(
         }
         case TZX_GDB:
         {
-            warn( "GDB block not supported yet" ) ;
+            tzx_render_gdb( level, block, data_size ) ;
             break ;
         }
         case TZX_SET_LEVEL:

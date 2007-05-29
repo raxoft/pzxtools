@@ -387,16 +387,6 @@ void tzx_render_gdb_data(
     const uint pause_length
 )
 {
-    // In case there are just two symbols, try to use the DATA block directly.
-
-    if ( symbol_count == 2 ) {
-
-        // FIXME: make the proper checks here.
-
-        tzx_render_data( level, data, count, 2, 2, (u16 *) (table + 1), (u16 *) (table + 6) , TAIL_CYCLES, pause_length ) ;
-        return ;
-    }
-
     // Output all data symbols.
 
     uint mask = 0x80 ;
@@ -435,6 +425,49 @@ void tzx_render_gdb_data(
     // Now render the pause.
 
     tzx_render_pause( level, pause_length ) ;
+}
+
+/**
+ * Try to store the GDB data directly to the output stream.
+ */
+bool tzx_store_gdb_data(
+    bool & level,
+    const byte * data,
+    uint count,
+    const uint bit_count,
+    const byte * const table,
+    const uint symbol_count,
+    const uint symbol_pulses,
+    const uint pause_length
+)
+{
+    // Only 2 symbols are supported.
+
+    if ( symbol_count != 2 ) {
+        return false ;
+    }
+
+    // Measure the
+    //
+    // 00 00
+    // 00 01
+    // 00 02
+    // 00 03
+    // 01 00
+    // 01 01
+    // 01 02
+    // 01 03
+    // 02 00
+    // 02 01
+    // 02 02
+    // 02 03
+    // 03 00
+    // 03 01
+    // 03 02
+    // 03 03
+
+    tzx_render_data( level, data, count, 2, 2, (u16 *) (table + 1), (u16 *) (table + 6) , TAIL_CYCLES, pause_length ) ;
+    return true ;
 }
 
 /**
@@ -502,10 +535,14 @@ void tzx_render_gdb( bool & level, const byte * const block, const uint block_si
         return ;
     }
 
-    // Now render the pilot and the data.
+    // Now render the pilot and the data. For data, first try to output the
+    // data as they are, only if it is not possible render it as pulses.
 
     tzx_render_gdb_pilot( level, pilot_stream, pilot_symbols, pilot_table, pilot_symbol_count, pilot_symbol_pulses ) ;
-    tzx_render_gdb_data( level, data_stream, data_symbols, data_symbol_bits, data_table, data_symbol_count, data_symbol_pulses, pause_length ) ;
+
+    if ( ! tzx_store_gdb_data( level, data_stream, data_symbols, data_symbol_bits, data_table, data_symbol_count, data_symbol_pulses, pause_length ) ) {
+        tzx_render_gdb_data( level, data_stream, data_symbols, data_symbol_bits, data_table, data_symbol_count, data_symbol_pulses, pause_length ) ;
+    }
 }
 
 /**

@@ -253,7 +253,11 @@ void tzx_render_data(
  */
 void tzx_render_pause( bool & level, const uint duration )
 {
-    hope( duration > 0 ) ;
+    // Zero pause means no level change at all.
+
+    if ( duration == 0 ) {
+        return ;
+    }
 
     // In case the level is high, leave it so for 1ms before bringing it low.
 
@@ -267,17 +271,135 @@ void tzx_render_pause( bool & level, const uint duration )
 }
 
 /**
+ * Output GDB symbol pulse sequence to the output stream.
+ */
+void tzx_render_gdb_symbol( bool & level, const byte * sequence, const uint pulse_limit )
+{
+    // Adjust the output level.
+
+    switch ( *sequence++ ) {
+        case 0: {
+            break ;
+        }
+        case 1: {
+            level = ! level ;
+            break ;
+        }
+        case 2: {
+            level = false ;
+            break ;
+        }
+        case 3: {
+            level = true ;
+            break ;
+        }
+
+        default: {
+            warn( "invalid GDB pulse sequence level bits 0x%02x", sequence[ -1 ] ) ;
+        }
+    }
+
+    // Now output the pulses.
+
+    for ( uint i = 0 ; i < pulse_limit ; i++ ) {
+        uint duration = *sequence++ ;
+        duration += *sequence++ << 8 ;
+        if ( duration == 0 ) {
+            break ;
+        }
+        tzx_render_pulse( level, duration ) ;
+    }
+}
+
+/**
  * Decode GDB pilot pulses and send them to the output stream.
  */
 void tzx_render_gdb_pilot(
     bool & level,
-    const byte * const data,
-    const uint pulse_count,
+    const byte * data,
+    uint pulse_count,
     const byte * const table,
     const uint symbol_count,
     const uint symbol_pulses
 )
 {
+    // Output all pilot symbols.
+
+    while ( pulse_count-- > 0 ) {
+
+        // Fetch pilot symbol and verify it.
+
+        const uint symbol = *data++ ;
+
+        if ( symbol >= symbol_count ) {
+            warn ( "pilot symbol %u is out of range <0,%u>", symbol, symbol_count - 1 ) ;
+            continue ;
+        }
+
+        // Get the corresponding pulse sequence.
+
+        const byte * const sequence = ( table + ( symbol * ( 2 * symbol_pulses + 1 ) ) ) ;
+
+        // Get the repeat count.
+
+        uint repeat_count = *data++ ;
+        repeat_count += *data++ << 8 ;
+
+        // Output the symbol as many times as needed.
+
+        while ( repeat_count-- > 0 ) {
+            tzx_render_gdb_symbol( level, sequence, symbol_pulses ) ;
+        }
+    }
+}
+
+/**
+ * Decode GDB data pulses and send them to the output stream.
+ */
+void tzx_render_gdb_data(
+    bool & level,
+    const byte * data,
+    uint pulse_count,
+    const uint bit_count,
+    const byte * const table,
+    const uint symbol_count,
+    const uint symbol_pulses
+)
+{
+    // Output all data symbols.
+
+    uint mask = 0x80 ;
+
+    while ( pulse_count-- > 0 ) {
+
+        // Fetch data symbol and verify it.
+
+        uint symbol = 0 ;
+        for ( uint i = 0 ; i < bit_count ; i++ ) {
+            symbol <<= 1 ;
+            if ( ( *data & mask ) != 0 ) {
+                symbol |= 1 ;
+            }
+            mask >>= 1 ;
+            if ( mask == 0 ) {
+                mask = 0x80 ;
+                data++ ;
+            }
+        }
+
+        if ( symbol >= symbol_count ) {
+            warn ( "data symbol %u is out of range <0,%u>", symbol, symbol_count - 1 ) ;
+            continue ;
+        }
+
+        // Get the corresponding pulse sequence.
+
+        const byte * const sequence = ( table + ( symbol * ( 2 * symbol_pulses + 1 ) ) ) ;
+
+        // Output the symbol.
+
+        tzx_render_gdb_symbol( level, sequence, symbol_pulses ) ;
+    }
 }
 
 /**
@@ -360,9 +482,15 @@ void tzx_render_gdb( bool & level, const byte * const block, const uint block_si
         return ;
     }
 
-    tzx_render_gdb_pilot( level, pilot_stream, pilot_symbols, pilot_table, pilot_symbol_count, pilot_symbol_pulses ) ;
+    // Now render the pilot and data pulses.
 
-    // FIXME the rest.
+    pzx_browse( "GDB +++" ) ;
+
+    tzx_render_gdb_pilot( level, pilot_stream, pilot_symbols, pilot_table, pilot_symbol_count, pilot_symbol_pulses ) ;
+    tzx_render_gdb_data( level, data_stream, data_symbols, data_symbol_bits, data_table, data_symbol_count, data_symbol_pulses ) ;
+    tzx_render_pause( level, pause_length ) ;
+
+    pzx_browse( "GDB ---" ) ;
 }
 
 /**

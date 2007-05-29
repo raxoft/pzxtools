@@ -507,6 +507,11 @@ void process_line( uint & last_block_tag, const char * const line )
         case TAG_STOP:
         {
             finish_block( last_block_tag, tag ) ;
+
+            uint flags = 0 ;
+            parse_number( flags, s, 0xFFFF, "stop flags" ) ;
+
+            pzx_stop( flags ) ;
             break ;
         }
         case TAG_BROWSE:
@@ -623,7 +628,15 @@ int main( int argc, char * * argv )
                 break ;
             }
             default: {
-                fail( "invalid option %s", argv[ i ] ) ;
+                fprintf( stderr, "error: invalid option %s\n", argv[ i ] ) ;
+
+                // Fall through.
+            }
+            case 'h': {
+                fprintf( stderr, "usage: txt2pzx [-p] [-o output_file] [input_file]\n" ) ;
+                fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
+                fprintf( stderr, "-p     store pulse sequences exactly as specified\n" ) ;
+                return EXIT_FAILURE ;
             }
         }
     }

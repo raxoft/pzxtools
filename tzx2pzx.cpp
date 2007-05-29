@@ -40,7 +40,14 @@ int main( int argc, char * * argv )
                 break ;
             }
             default: {
-                fail( "invalid option %s", argv[ i ] ) ;
+                fprintf( stderr, "error: invalid option %s\n", argv[ i ] ) ;
+
+                // Fall through.
+            }
+            case 'h': {
+                fprintf( stderr, "usage: tzx2pzx [-o output_file] [input_file]\n" ) ;
+                fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
+                return EXIT_FAILURE ;
             }
         }
     }

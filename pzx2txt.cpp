@@ -306,7 +306,16 @@ int main( int argc, char * * argv )
                 break ;
             }
             default: {
-                fail( "invalid option %s", argv[ i ] ) ;
+                fprintf( stderr, "error: invalid option %s\n", argv[ i ] ) ;
+
+                // Fall through.
+            }
+            case 'h': {
+                fprintf( stderr, "usage: pzx2txt [-a|-d] [-o output_file] [input_file]\n" ) ;
+                fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
+                fprintf( stderr, "-a     dump bytes in data blocks as ASCII characters when possible\n" ) ;
+                fprintf( stderr, "-d     don't dump content of data blocks\n" ) ;
+                return EXIT_FAILURE ;
             }
         }
     }

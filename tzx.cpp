@@ -164,6 +164,46 @@ void tzx_render_pilot(
 void tzx_render_data(
     bool & level,
     const byte * const data,
+    const uint bit_count,
+    const uint pulse_count_0,
+    const uint pulse_count_1,
+    const u16 * const pulse_sequence_0,
+    const u16 * const pulse_sequence_1,
+    const uint tail_cycles,
+    const uint pause_length
+)
+{
+    // If there are some bits at all, output the data block.
+
+    if ( bit_count > 0 ) {
+
+        // Output the block.
+        //
+        // Note that we terminate the block with tail pulse in case the
+        // pause is to follow. We do this always as we want the block to be
+        // properly terminated regardless of the following blocks.
+
+        pzx_data( data, bit_count, level, pulse_count_0, pulse_count_1, pulse_sequence_0, pulse_sequence_1, pause_length > 0 ? tail_cycles : 0 ) ;
+    }
+
+    // Now if there was some pause specified, output it as well.
+    // However don't output the pause if we have already used the tail pulse for that
+    // and the pause was short enough.
+
+    if ( pause_length > 0 ) {
+        level = false ;
+        if ( tail_cycles == 0 || pause_length > 1 ) {
+            pzx_pause( pause_length * MILLISECOND_CYCLES, level ) ;
+        }
+    }
+}
+
+/**
+ * Output data block using given arguments to the output stream.
+ */
+void tzx_render_data(
+    bool & level,
+    const byte * const data,
     const uint data_size,
     const uint bits_in_last_byte,
     const uint bit_0_cycles_1,
@@ -183,40 +223,20 @@ void tzx_render_data(
         bit_count += bits_in_last_byte ;
     }
 
-    // If there are some bits at all, output the data block.
+    // Prepare the pulse sequences for both bit 0 and 1.
 
-    if ( bit_count > 0 ) {
+    u16 s0[ 2 ] ;
+    u16 s1[ 2 ] ;
 
-        // Prepare the pulse sequences for both bit 0 and 1.
+    s0[ 0 ] = little_endian< u16 >( bit_0_cycles_1 ) ;
+    s0[ 1 ] = little_endian< u16 >( bit_0_cycles_2 ) ;
 
-        u16 s0[ 2 ] ;
-        u16 s1[ 2 ] ;
+    s1[ 0 ] = little_endian< u16 >( bit_1_cycles_1 ) ;
+    s1[ 1 ] = little_endian< u16 >( bit_1_cycles_2 ) ;
 
-        s0[ 0 ] = little_endian< u16 >( bit_0_cycles_1 ) ;
-        s0[ 1 ] = little_endian< u16 >( bit_0_cycles_2 ) ;
+    // Now output the block.
 
-        s1[ 0 ] = little_endian< u16 >( bit_1_cycles_1 ) ;
-        s1[ 1 ] = little_endian< u16 >( bit_1_cycles_2 ) ;
-
-        // Output the block.
-        //
-        // Note that we terminate the block with tail pulse in case the
-        // pause is to follow. We do this always as we want the block to be
-        // properly terminated regardless of the following blocks.
-
-        pzx_data( data, bit_count, level, 2, 2, s0, s1, pause_length > 0 ? tail_cycles : 0 ) ;
-    }
-
-    // Now if there was some pause specified, output it as well.
-    // However don't output the pause if we have already used the tail pulse for that
-    // and the pause was short enough.
-
-    if ( pause_length > 0 ) {
-        level = false ;
-        if ( tail_cycles == 0 || pause_length > 1 ) {
-            pzx_pause( pause_length * MILLISECOND_CYCLES, level ) ;
-        }
-    }
+    tzx_render_data( level, data, bit_count, 2, 2, s0, s1, tail_cycles, pause_length ) ;
 }
 
 /**
@@ -363,9 +383,16 @@ void tzx_render_gdb_data(
     const uint bit_count,
     const byte * const table,
     const uint symbol_count,
-    const uint symbol_pulses
+    const uint symbol_pulses,
+    const uint pause_length
 )
 {
+    // In case there are just two symbols, try to use the DATA block directly.
+
+    if ( pulse_count == 2 ) {
+
+    }
+
     // Output all data symbols.
 
     uint mask = 0x80 ;
@@ -400,6 +427,10 @@ void tzx_render_gdb_data(
 
         tzx_render_gdb_symbol( level, sequence, symbol_pulses ) ;
     }
+
+    // Now render the pause.
+
+    tzx_render_pause( level, pause_length ) ;
 }
 
 /**
@@ -482,13 +513,13 @@ void tzx_render_gdb( bool & level, const byte * const block, const uint block_si
         return ;
     }
 
-    // Now render the pilot and data pulses.
+    // Now render the pilot and the data.
 
     pzx_browse( "GDB +++" ) ;
 
     tzx_render_gdb_pilot( level, pilot_stream, pilot_symbols, pilot_table, pilot_symbol_count, pilot_symbol_pulses ) ;
-    tzx_render_gdb_data( level, data_stream, data_symbols, data_symbol_bits, data_table, data_symbol_count, data_symbol_pulses ) ;
-    tzx_render_pause( level, pause_length ) ;
+    pzx_browse( "GDB xxx" ) ;
+    tzx_render_gdb_data( level, data_stream, data_symbols, data_symbol_bits, data_table, data_symbol_count, data_symbol_pulses, pause_length ) ;
 
     pzx_browse( "GDB ---" ) ;
 }

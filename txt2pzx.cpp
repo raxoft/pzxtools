@@ -407,7 +407,7 @@ void process_line( uint & last_block_tag, const char * const line )
         }
         case TAG_PULSE:
         {
-            // Start new sequence if necessary.
+            // Fetch the duration, or start new sequence if necessary.
 
             uint duration ;
             if ( ! parse_number( duration, s ) ) {
@@ -546,7 +546,7 @@ void process_lines( Buffer & buffer )
     buffer.write< u8 >( '\n' ) ;
     buffer.write< u32 >( 0 ) ;
 
-    // Skip byte order marker, if present. Some brain-dead editors safe
+    // Skip byte order marker, if present. Some brain-dead editors save
     // those even to UTF-8 encoded files, sigh.
 
     char * data = buffer.get_typed_data< char >() ;

@@ -337,7 +337,7 @@ void tzx_render_gdb_symbol( bool & level, const byte * sequence, const uint puls
 void tzx_render_gdb_pilot(
     bool & level,
     const byte * data,
-    uint pulse_count,
+    uint count,
     const byte * const table,
     const uint symbol_count,
     const uint symbol_pulses
@@ -345,7 +345,7 @@ void tzx_render_gdb_pilot(
 {
     // Output all pilot symbols.
 
-    while ( pulse_count-- > 0 ) {
+    while ( count-- > 0 ) {
 
         // Fetch pilot symbol and verify it.
 
@@ -379,7 +379,7 @@ void tzx_render_gdb_pilot(
 void tzx_render_gdb_data(
     bool & level,
     const byte * data,
-    uint pulse_count,
+    uint count,
     const uint bit_count,
     const byte * const table,
     const uint symbol_count,
@@ -389,15 +389,19 @@ void tzx_render_gdb_data(
 {
     // In case there are just two symbols, try to use the DATA block directly.
 
-    if ( pulse_count == 2 ) {
+    if ( symbol_count == 2 ) {
 
+        // FIXME: make the proper checks here.
+
+        tzx_render_data( level, data, count, 2, 2, (u16 *) (table + 1), (u16 *) (table + 6) , TAIL_CYCLES, pause_length ) ;
+        return ;
     }
 
     // Output all data symbols.
 
     uint mask = 0x80 ;
 
-    while ( pulse_count-- > 0 ) {
+    while ( count-- > 0 ) {
 
         // Fetch data symbol and verify it.
 
@@ -478,21 +482,6 @@ void tzx_render_gdb( bool & level, const byte * const block, const uint block_si
 
     const byte * const end = data_stream + data_stream_size ;
 
-#if 0
-    warn( "block size %u", block_size ) ;
-    warn( "pilot symbols %u", pilot_symbols ) ;
-    warn( "pilot symbol pulses %u", pilot_symbol_pulses ) ;
-    warn( "pilot symbol count %u", pilot_symbol_count ) ;
-    warn( "data symbols %u", data_symbols ) ;
-    warn( "data symbol pulses %u", data_symbol_pulses ) ;
-    warn( "data symbol count %u", data_symbol_count ) ;
-    warn( "pilot table size %u", pilot_table_size ) ;
-    warn( "pilot stream size %u", pilot_stream_size ) ;
-    warn( "data table size %u", data_table_size ) ;
-    warn( "data stream size %u", data_stream_size ) ;
-    warn( "total %u", end - block  ) ;
-#endif
-
     // Verify the block size.
 
     if (
@@ -515,13 +504,8 @@ void tzx_render_gdb( bool & level, const byte * const block, const uint block_si
 
     // Now render the pilot and the data.
 
-    pzx_browse( "GDB +++" ) ;
-
     tzx_render_gdb_pilot( level, pilot_stream, pilot_symbols, pilot_table, pilot_symbol_count, pilot_symbol_pulses ) ;
-    pzx_browse( "GDB xxx" ) ;
     tzx_render_gdb_data( level, data_stream, data_symbols, data_symbol_bits, data_table, data_symbol_count, data_symbol_pulses, pause_length ) ;
-
-    pzx_browse( "GDB ---" ) ;
 }
 
 /**

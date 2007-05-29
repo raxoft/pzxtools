@@ -60,7 +60,7 @@ bool option_preserve_pulses ;
 } ;
 
 /**
- * Parse integral argument.
+ * Parse integral number.
  */
 bool parse_number( uint & number, const char * & string, const uint maximum = 0, const char * const what = NULL )
 {
@@ -100,13 +100,13 @@ bool parse_number( uint & number, const char * & string, const uint maximum = 0,
 
     if ( ( string == end ) || ( errno == ERANGE ) ) {
         if ( what ) {
-            warn( "invalid %s encountered", what ) ;
+            warn( "invalid %s encountered in string %s", what, string ) ;
         }
         return false ;
     }
 
     if ( maximum > 0 && result > maximum ) {
-        warn( "%s out of range", what ? what : "value" ) ;
+        warn( "%s %lu out of range in string %s", ( what ? what : "value" ), result, string ) ;
         return false ;
     }
 
@@ -120,13 +120,113 @@ bool parse_number( uint & number, const char * & string, const uint maximum = 0,
 }
 
 /**
+ * Parse hexadecimal digit.
+ */
+uint parse_hex_digit( const char * & string )
+{
+    const char c = *string++ ;
+
+    if ( c >= '0' && c <= '9' ) {
+        return c - '0' ;
+    }
+    if ( c >= 'a' && c <= 'f' ) {
+        return 10 + c - 'a' ;
+    }
+    if ( c >= 'A' && c <= 'F' ) {
+        return 10 + c - 'A' ;
+    }
+
+    string-- ;
+
+    warn( "invalid hexadecimal digit 0x%02x (%c) in string %s", c, c, string ) ;
+    return 0 ;
+}
+
+/**
+ * Parse hexadecimal number.
+ */
+uint parse_hex_number( const char * & string )
+{
+    uint result = parse_hex_digit( string ) ;
+    result <<= 4 ;
+    result |= parse_hex_digit( string ) ;
+    return result ;
+}
+
+/**
  * Parse string argument.
  */
 const char * parse_string( const char * const string )
 {
     hope( string ) ;
 
-    // FIXME
+    // The underlying buffer is ours anyway, so we may as well to use it for output.
+
+    const char * in = string ;
+    char * out = const_cast< char * >( in ) ;
+
+    // Check leading quote.
+
+    if ( *in == '"' ) {
+        in++ ;
+    }
+    else {
+        warn( "missing opening quote in a string %s", string ) ;
+    }
+
+    // Now process each character until we hit end of the string.
+
+    for ( ; ; ) {
+
+        char c = *in++ ;
+
+        // Stop on quote.
+
+        if ( c == '"' ) {
+            break ;
+        }
+
+        // Process escaped characters.
+
+        if ( c == '\\' ) {
+            c = *in++ ;
+            switch ( c ) {
+                case 'n': {
+                    c = '\n' ;
+                    break ;
+                }
+                case 'r': {
+                    c = '\r' ;
+                    break ;
+                }
+                case 't': {
+                    c = '\t' ;
+                    break ;
+                }
+                case 'x': {
+                    c = parse_hex_number( in ) ;
+                    break ;
+                }
+            }
+        }
+
+        // Make sure the string it is properly terminated.
+        //
+        // Note that it misreports \x00 as well, but that is not valid in the string anyway.
+
+        if ( c == 0 ) {
+            warn( "missing closing quote in a string %s", string ) ;
+            break ;
+        }
+
+        // Store it to the output.
+
+        *out++ = c ;
+    }
+
+    // Terminate the string and return it.
+
+    *out++ = 0 ;
 
     return string ;
 }
@@ -138,9 +238,45 @@ void parse_data_line( const char * const string )
 {
     hope( string ) ;
 
+    // Process each character until we hit end of line.
 
-    data_buffer.write< u8 >( 0xFF ) ;
-    // FIXME
+    const char * s = string ;
+
+    for ( ; ; ) {
+
+        char c = *s ;
+
+        // Stop when we hit end of line.
+
+        if ( c == 0 ) {
+            break ;
+        }
+
+        // If it is a dot-escaped ASCII char, fetch it as it is.
+
+        if ( c == '.' ) {
+            s++ ;
+            c = *s++ ;
+
+            // In case the line ends here, report assume there was a space which
+            // was stripped by an editor.
+
+            if ( c == 0 ) {
+                s-- ;
+                c = ' ' ;
+            }
+        }
+
+        // Otherwise fetch the hex encoded value.
+
+        else {
+            c = parse_hex_number( s ) ;
+        }
+
+        // Now store it to the buffer.
+
+        data_buffer.write< u8 >( c ) ;
+    }
 }
 
 /**
@@ -150,7 +286,9 @@ void finish_block( uint & tag, const uint new_tag )
 {
     // Flush the previously buffered data.
 
-    pzx_flush() ;
+    if ( tag != 0 ) {
+        pzx_flush() ;
+    }
 
     // Process the gathered data.
 
@@ -181,7 +319,7 @@ void finish_block( uint & tag, const uint new_tag )
                 fail( "unspecified bit sequence" ) ;
             }
             if ( pulse_count_0 > 0xFF || pulse_count_1 > 0xFF ) {
-                fail( "bit sequence is too big" ) ;
+                fail( "too many pulses in bit sequence" ) ;
             }
 
             pzx_data(
@@ -303,10 +441,17 @@ void process_line( uint & last_block_tag, const char * const line )
         }
         case TAG_DATA:
         {
+            const uint previous_tag = last_block_tag ;
+
             finish_block( last_block_tag, tag ) ;
 
             uint level = 0 ;
             parse_number( level, s, 1, "initial pulse level" ) ;
+
+            if ( previous_tag == TAG_PULSE && level != output_level ) {
+                warn( "initial pulse level of data block is the same as the level of the last preceding pulse" ) ;
+            }
+
             output_level = ( level != 0 ) ;
 
             break ;

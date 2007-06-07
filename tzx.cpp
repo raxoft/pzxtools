@@ -97,7 +97,7 @@ const byte * tzx_get_next_block( const byte * const block, const byte * const ta
     const uint header_size = tzx_get_header_size( block ) ;
     hope( header_size > 0 ) ;
 
-    if ( header_size > static_cast< uint >( tape_end - block ) ) {
+    if ( header_size > uint( tape_end - block ) ) {
         warn( "TZX block header size exceeds file size" ) ;
         return NULL ;
     }
@@ -106,7 +106,7 @@ const byte * tzx_get_next_block( const byte * const block, const byte * const ta
 
     const uint data_size = tzx_get_data_size( block ) ;
 
-    if ( data_size > static_cast< uint >( tape_end - block - header_size ) ) {
+    if ( data_size > uint( tape_end - block - header_size ) ) {
         warn( "TZX block data size exceeds file size" ) ;
         return NULL ;
     }
@@ -228,11 +228,11 @@ void tzx_render_data(
     word s0[ 2 ] ;
     word s1[ 2 ] ;
 
-    s0[ 0 ] = static_cast< word >( bit_0_cycles_1 ) ;
-    s0[ 1 ] = static_cast< word >( bit_0_cycles_2 ) ;
+    s0[ 0 ] = word( bit_0_cycles_1 ) ;
+    s0[ 1 ] = word( bit_0_cycles_2 ) ;
 
-    s1[ 0 ] = static_cast< word >( bit_1_cycles_1 ) ;
-    s1[ 1 ] = static_cast< word >( bit_1_cycles_2 ) ;
+    s1[ 0 ] = word( bit_1_cycles_1 ) ;
+    s1[ 1 ] = word( bit_1_cycles_2 ) ;
 
     // Now output the block.
 
@@ -643,7 +643,7 @@ bool tzx_set_block_index( uint & block_index, const uint next_index, const sint 
     block_index = next_index - 1 ;
 
     const uint limit = ( offset < 0 ? block_index : block_count - next_index ) ;
-    const uint distance = static_cast< uint >( offset < 0 ? -offset : offset ) ;
+    const uint distance = uint( offset < 0 ? -offset : offset ) ;
 
     // In case it does, report error and proceed at next block.
 

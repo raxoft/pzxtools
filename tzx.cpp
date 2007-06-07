@@ -184,6 +184,11 @@ void tzx_render_data(
         // properly terminated regardless of the following blocks.
 
         pzx_data( data, bit_count, level, pulse_count_0, pulse_count_1, pulse_sequence_0, pulse_sequence_1, pause_length > 0 ? tail_cycles : 0 ) ;
+
+        // FIXME: adjust the level here, depending on the last bit output and the appropriate pulse length.
+        // FIXME: not the pulse length, as we don't know what it was originally. We need to use an explicit
+        // level if last bit is 0 and if it is 1.
+        // FIXME: and perhaps initial level as well, so we can adjust it only if there were some bits output.
     }
 
     // Now if there was some pause specified, output it as well.
@@ -351,13 +356,6 @@ uint tzx_extract_gdb_symbol( Buffer & buffer, const byte * sequence, const uint 
         buffer.write< word >( duration ) ;
    }
 
-   // Make sure the flags make sense, before returning them.
-
-   if ( flags > 3 ) {
-        warn( "invalid GDB pulse sequence level bits 0x%02x", flags ) ;
-        return 0 ;
-   }
-
    return flags ;
 }
 
@@ -463,7 +461,7 @@ void tzx_render_gdb_data(
 bool tzx_store_gdb_data(
     bool & level,
     const byte * data,
-    uint count,
+    const uint count,
     const uint bit_count,
     const byte * const table,
     const uint symbol_count,
@@ -471,13 +469,21 @@ bool tzx_store_gdb_data(
     const uint pause_length
 )
 {
+    // If there is no real output, we can as well process it as pulses.
+
+    if ( count == 0 ) {
+        return false ;
+    }
+
     // Only 2 symbols are supported.
 
     if ( symbol_count != 2 ) {
         return false ;
     }
 
-    // Extract the bit sequences, with extra 0 pulse prepended and appended.
+    hope( bit_count == 1 ) ;
+
+    // Extract the bit sequences and their level flags.
 
     Buffer bit_0_buffer( 512 ) ;
     const uint bit_0_flags = tzx_extract_gdb_symbol( bit_0_buffer, table, symbol_pulses ) ;
@@ -485,31 +491,79 @@ bool tzx_store_gdb_data(
     Buffer bit_1_buffer( 512 ) ;
     const uint bit_1_flags = tzx_extract_gdb_symbol( bit_1_buffer, table + ( 2 * symbol_pulses + 1 ), symbol_pulses ) ;
 
+    // Check if it is one of the simple combinations which are easy to
+    // achieve, and reject anything else.
+
+    if ( bit_0_flags != bit_1_flags ) {
+
+        // Mixed flags are perhaps too complex to be dealt with. Use pulses instead.
+
+        return false ;
+    }
+
+    switch ( bit_0_flags ) {
+        case 0: {
+
+            // Simple case, no change needed.
+
+            break ;
+        }
+        case 1: {
+
+            // This might be solved by prepending zero pulse in some cases,
+            // but why bother.
+
+            return false ;
+        }
+        case 2: {
+
+            // Force low level.
+
+            level = false ;
+            break ;
+        }
+        case 3: {
+
+            // Force high level.
+
+            level = true ;
+            break ;
+        }
+
+        default: {
+
+            // Invalid flags, fall back to pulses anyway.
+
+            return false ;
+        }
+    }
+
+    // In case the level was forced, make sure both sequences are even by
+    // appending zero pulse if necessary.
+
+    if ( bit_0_flags >= 2 ) {
+        if ( ( bit_0_buffer.get_data_size() & 2 ) != 0 ) {
+            bit_0_buffer.write< word >( 0 ) ;
+        }
+        if ( ( bit_1_buffer.get_data_size() & 2 ) != 0 ) {
+            bit_1_buffer.write< word >( 0 ) ;
+        }
+    }
+
+    // Now store the data to the DATA block directly.
+    //
+    // Note that the sequences may not be too long, as they were 256 bytes
+    // at maximum originally and we did not increase it in that case.
+
     const word * bit_0_sequence = bit_0_buffer.get_typed_data< word >() ;
     const word * bit_1_sequence = bit_1_buffer.get_typed_data< word >() ;
     uint bit_0_length = bit_0_buffer.get_data_size() / 2 ;
     uint bit_1_length = bit_1_buffer.get_data_size() / 2 ;
 
-    // Measure the
-    //
-    // 00 00
-    // 00 01
-    // 00 02
-    // 00 03
-    // 01 00
-    // 01 01
-    // 01 02
-    // 01 03
-    // 02 00
-    // 02 01
-    // 02 02
-    // 02 03
-    // 03 00
-    // 03 01
-    // 03 02
-    // 03 03
-
     tzx_render_data( level, data, count, bit_0_length, bit_1_length, bit_0_sequence, bit_1_sequence, TAIL_CYCLES, pause_length ) ;
+
+    // FIXME: adjust level appropriatelly according to last symbol output.
+
     return true ;
 }
 

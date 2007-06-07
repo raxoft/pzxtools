@@ -258,7 +258,7 @@ void parse_data_line( const char * const string )
             s++ ;
             c = *s++ ;
 
-            // In case the line ends here, report assume there was a space which
+            // In case the line ends here, assume there was a space which
             // was stripped by an editor.
 
             if ( c == 0 ) {
@@ -296,7 +296,7 @@ void finish_block( uint & tag, const uint new_tag )
         case TAG_DATA:
         {
             uint data_size = data_buffer.get_data_size() ;
-            if ( data_size > 0x80000000 / 8 ) {
+            if ( data_size >= 0x80000000 / 8 ) {
                 fail( "the data block is too big" ) ;
             }
 
@@ -398,12 +398,12 @@ void process_line( uint & last_block_tag, const char * const line )
     switch ( tag ) {
         case TAG_HEADER: {
             finish_block( last_block_tag, tag ) ;
-            break ;
+            return ;
         }
         case TAG_INFO:
         {
             pzx_info( parse_string( s ) ) ;
-            break ;
+            return ;
         }
         case TAG_PULSE:
         {
@@ -490,7 +490,7 @@ void process_line( uint & last_block_tag, const char * const line )
         case TAG_BODY:
         {
             parse_data_line( s ) ;
-            break ;
+            return ;
         }
         case TAG_PAUSE:
         {
@@ -518,7 +518,7 @@ void process_line( uint & last_block_tag, const char * const line )
         {
             finish_block( last_block_tag, tag ) ;
             pzx_browse( parse_string( s ) ) ;
-            break ;
+            return ;
         }
         case TAG_TAG:
         {
@@ -527,11 +527,15 @@ void process_line( uint & last_block_tag, const char * const line )
                 fail( "invalid tag name %s", s ) ;
             }
             unknown_tag = PZX_TAG( s[0], s[1], s[2], s[3] ) ;
-            break ;
+            return ;
         }
         default: {
             fail( "invalid line %s", line ) ;
         }
+    }
+
+    if ( *s != 0 ) {
+        warn( "extra characters detected at end of line %s", line ) ;
     }
 }
 

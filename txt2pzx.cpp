@@ -24,6 +24,7 @@ const uint TAG_INFO         = TAG_NAME('I','N','F','O') ;
 const uint TAG_PULSE        = TAG_NAME('P','U','L','S') ;
 const uint TAG_DATA         = TAG_NAME('D','A','T','A') ;
 const uint TAG_SIZE         = TAG_NAME('S','I','Z','E') ;
+const uint TAG_BITS         = TAG_NAME('B','I','T','S') ;
 const uint TAG_BIT0         = TAG_NAME('B','I','T','0') ;
 const uint TAG_BIT1         = TAG_NAME('B','I','T','1') ;
 const uint TAG_TAIL         = TAG_NAME('T','A','I','L') ;
@@ -458,7 +459,11 @@ void process_line( uint & last_block_tag, const char * const line )
         case TAG_SIZE:
         {
             parse_number( expected_data_size, s, 0, "byte size" ) ;
-            parse_number( extra_bit_count, s, 8 ) ;
+            break ;
+        }
+        case TAG_BITS:
+        {
+            parse_number( extra_bit_count, s, 8, "extra bit count" ) ;
             break ;
         }
         case TAG_BIT0:

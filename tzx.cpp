@@ -332,6 +332,36 @@ void tzx_render_gdb_symbol( bool & level, const byte * sequence, const uint puls
 }
 
 /**
+ * Extract given GDB symbol pulse sequence to given buffer.
+ */
+uint tzx_extract_gdb_symbol( Buffer & buffer, const byte * sequence, const uint pulse_limit )
+{
+    // Extract the level flags.
+
+    const uint flags = *sequence++ ;
+
+    // Extract the pulses.
+
+    for ( uint i = 0 ; i < pulse_limit ; i++ ) {
+        word duration = *sequence++ ;
+        duration += *sequence++ << 8 ;
+        if ( duration == 0 ) {
+            break ;
+        }
+        buffer.write< word >( duration ) ;
+   }
+
+   // Make sure the flags make sense, before returning them.
+
+   if ( flags > 3 ) {
+        warn( "invalid GDB pulse sequence level bits 0x%02x", flags ) ;
+        return 0 ;
+   }
+
+   return flags ;
+}
+
+/**
  * Decode GDB pilot pulses and send them to the output stream.
  */
 void tzx_render_gdb_pilot(
@@ -447,6 +477,19 @@ bool tzx_store_gdb_data(
         return false ;
     }
 
+    // Extract the bit sequences, with extra 0 pulse prepended and appended.
+
+    Buffer bit_0_buffer( 512 ) ;
+    const uint bit_0_flags = tzx_extract_gdb_symbol( bit_0_buffer, table, symbol_pulses ) ;
+
+    Buffer bit_1_buffer( 512 ) ;
+    const uint bit_1_flags = tzx_extract_gdb_symbol( bit_1_buffer, table + ( 2 * symbol_pulses + 1 ), symbol_pulses ) ;
+
+    const word * bit_0_sequence = bit_0_buffer.get_typed_data< word >() ;
+    const word * bit_1_sequence = bit_1_buffer.get_typed_data< word >() ;
+    uint bit_0_length = bit_0_buffer.get_data_size() / 2 ;
+    uint bit_1_length = bit_1_buffer.get_data_size() / 2 ;
+
     // Measure the
     //
     // 00 00
@@ -466,7 +509,7 @@ bool tzx_store_gdb_data(
     // 03 02
     // 03 03
 
-    tzx_render_data( level, data, count, 2, 2, (word *) (table + 1), (word *) (table + 6) , TAIL_CYCLES, pause_length ) ;
+    tzx_render_data( level, data, count, bit_0_length, bit_1_length, bit_0_sequence, bit_1_sequence, TAIL_CYCLES, pause_length ) ;
     return true ;
 }
 

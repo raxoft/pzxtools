@@ -167,8 +167,8 @@ void tzx_render_data(
     const uint bit_count,
     const uint pulse_count_0,
     const uint pulse_count_1,
-    const u16 * const pulse_sequence_0,
-    const u16 * const pulse_sequence_1,
+    const word * const pulse_sequence_0,
+    const word * const pulse_sequence_1,
     const uint tail_cycles,
     const uint pause_length
 )
@@ -225,14 +225,14 @@ void tzx_render_data(
 
     // Prepare the pulse sequences for both bit 0 and 1.
 
-    u16 s0[ 2 ] ;
-    u16 s1[ 2 ] ;
+    word s0[ 2 ] ;
+    word s1[ 2 ] ;
 
-    s0[ 0 ] = little_endian< u16 >( bit_0_cycles_1 ) ;
-    s0[ 1 ] = little_endian< u16 >( bit_0_cycles_2 ) ;
+    s0[ 0 ] = static_cast< word >( bit_0_cycles_1 ) ;
+    s0[ 1 ] = static_cast< word >( bit_0_cycles_2 ) ;
 
-    s1[ 0 ] = little_endian< u16 >( bit_1_cycles_1 ) ;
-    s1[ 1 ] = little_endian< u16 >( bit_1_cycles_2 ) ;
+    s1[ 0 ] = static_cast< word >( bit_1_cycles_1 ) ;
+    s1[ 1 ] = static_cast< word >( bit_1_cycles_2 ) ;
 
     // Now output the block.
 
@@ -466,7 +466,7 @@ bool tzx_store_gdb_data(
     // 03 02
     // 03 03
 
-    tzx_render_data( level, data, count, 2, 2, (u16 *) (table + 1), (u16 *) (table + 6) , TAIL_CYCLES, pause_length ) ;
+    tzx_render_data( level, data, count, 2, 2, (word *) (table + 1), (word *) (table + 6) , TAIL_CYCLES, pause_length ) ;
     return true ;
 }
 

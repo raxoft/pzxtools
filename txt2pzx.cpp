@@ -24,7 +24,6 @@ const uint TAG_INFO         = TAG_NAME('I','N','F','O') ;
 const uint TAG_PULSE        = TAG_NAME('P','U','L','S') ;
 const uint TAG_DATA         = TAG_NAME('D','A','T','A') ;
 const uint TAG_SIZE         = TAG_NAME('S','I','Z','E') ;
-const uint TAG_BITS         = TAG_NAME('B','I','T','S') ;
 const uint TAG_BIT0         = TAG_NAME('B','I','T','0') ;
 const uint TAG_BIT1         = TAG_NAME('B','I','T','1') ;
 const uint TAG_TAIL         = TAG_NAME('T','A','I','L') ;
@@ -328,8 +327,8 @@ void finish_block( uint & tag, const uint new_tag )
                 output_level,
                 pulse_count_0,
                 pulse_count_1,
-                bit_0_buffer.get_typed_data< u16 >(),
-                bit_1_buffer.get_typed_data< u16 >(),
+                bit_0_buffer.get_typed_data< word >(),
+                bit_1_buffer.get_typed_data< word >(),
                 tail_cycles
             ) ;
 
@@ -459,18 +458,14 @@ void process_line( uint & last_block_tag, const char * const line )
         case TAG_SIZE:
         {
             parse_number( expected_data_size, s, 0, "byte size" ) ;
-            break ;
-        }
-        case TAG_BITS:
-        {
-            parse_number( extra_bit_count, s, 8, "extra bit count" ) ;
+            parse_number( extra_bit_count, s, 8 ) ;
             break ;
         }
         case TAG_BIT0:
         {
             uint duration ;
             while ( parse_number( duration, s, 0xFFFF ) ) {
-                bit_0_buffer.write( little_endian< u16 >( duration ) ) ;
+                bit_0_buffer.write< word >( duration ) ;
             }
             break ;
         }
@@ -478,7 +473,7 @@ void process_line( uint & last_block_tag, const char * const line )
         {
             uint duration ;
             while ( parse_number( duration, s, 0xFFFF ) ) {
-                bit_1_buffer.write( little_endian< u16 >( duration ) ) ;
+                bit_1_buffer.write< word >( duration ) ;
             }
             break ;
         }

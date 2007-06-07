@@ -294,7 +294,7 @@ void pzx_flush( void )
         last_level = false ;
     }
 
-    // Now if there are some pending pulses, store the to the buffer.
+    // Now if there are some pending pulses, store them to the buffer.
 
     if ( pulse_count > 0 ) {
         pzx_store( pulse_count, pulse_duration ) ;
@@ -310,8 +310,6 @@ void pzx_flush( void )
 
 /**
  * Append given data block to PZX output file as PZX data block.
- *
- * @note The pulse sequences are already expected in little endian byte order.
  */
 void pzx_data(
     const byte * const data,
@@ -319,8 +317,8 @@ void pzx_data(
     const bool initial_level,
     const uint pulse_count_0,
     const uint pulse_count_1,
-    const u16 * const pulse_sequence_0,
-    const u16 * const pulse_sequence_1,
+    const word * const pulse_sequence_0,
+    const word * const pulse_sequence_1,
     const uint tail_cycles
 )
 {
@@ -346,10 +344,14 @@ void pzx_data(
     header_buffer.write_little< u8 >( pulse_count_0 ) ;
     header_buffer.write_little< u8 >( pulse_count_1 ) ;
 
-    // Copy the sequences.
+    // Store the sequences.
 
-    header_buffer.write( pulse_sequence_0, 2 * pulse_count_0 ) ;
-    header_buffer.write( pulse_sequence_1, 2 * pulse_count_1 ) ;
+    for ( uint i = 0 ; i < pulse_count_0 ; i++ ) {
+        header_buffer.write_little< u16 >( pulse_sequence_0[ i ] ) ;
+    }
+    for ( uint i = 0 ; i < pulse_count_1 ; i++ ) {
+        header_buffer.write_little< u16 >( pulse_sequence_1[ i ] ) ;
+    }
 
     // Copy the bit stream data themselves.
 

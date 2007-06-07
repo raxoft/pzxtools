@@ -58,8 +58,8 @@ void pzx_data(
     const bool initial_level,
     const uint pulse_count_0,
     const uint pulse_count_1,
-    const u16 * const pulse_sequence_0,
-    const u16 * const pulse_sequence_1,
+    const word * const pulse_sequence_0,
+    const word * const pulse_sequence_1,
     const uint tail_cycles
 ) ;
 

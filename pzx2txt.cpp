@@ -207,10 +207,11 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
 
             bit_count &= 0x7FFFFFFF ;
 
-            fprintf( output_file, "SIZE %u\n", ( bit_count / 8 ) ) ;
+            fprintf( output_file, "SIZE %u", ( bit_count / 8 ) ) ;
             if ( ( bit_count & 7 ) != 0 ) {
-                fprintf( output_file, "BITS %u\n", ( bit_count & 7 ) ) ;
+                fprintf( output_file, " %u", ( bit_count & 7 ) ) ;
             }
+            fprintf( output_file, "\n" ) ;
 
             fprintf( output_file, "TAIL %u\n", tail_cycles ) ;
 

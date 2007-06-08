@@ -296,17 +296,14 @@ void tzx_render_pause( bool & level, const uint duration )
 }
 
 /**
- * Output pulses from given buffer.
+ * Output pulses from given buffer, packing them to DATA block if possible.
  */
-void tzx_render_gdb_pulses( bool & level, const bool initial_level, Buffer & buffer )
+void tzx_render_gdb_pulses( const bool initial_level, Buffer & buffer, const uint sequence_limit )
 {
-    level = initial_level ;
+    const word * const pulses = buffer.get_typed_data< word >() ;
+    const uint pulse_count = buffer.get_data_size() / 2 ;
 
-    const word * pulses = buffer.get_typed_data< word >() ;
-
-    for ( uint i = ( buffer.get_data_size() / 2 ) ; i-- > 0 ; ) {
-        tzx_render_pulse( level, *pulses++ ) ;
-    }
+    pzx_pack( pulses, pulse_count, initial_level, sequence_limit, 0 ) ;
 
     buffer.clear() ;
 }
@@ -407,7 +404,7 @@ void tzx_render_gdb_pilot(
     // Now simply send all the pulses to the output stream, without any
     // extra processing.
 
-    tzx_render_gdb_pulses( level, initial_level, buffer ) ;
+    tzx_render_gdb_pulses( initial_level, buffer, 0 ) ;
 }
 
 /**
@@ -462,10 +459,12 @@ void tzx_render_gdb_data(
         tzx_render_gdb_symbol( level, buffer, sequence, symbol_pulses ) ;
     }
 
-    // Now simply send all the pulses to the output stream, without any
-    // extra processing.
+    // Now try to pack the pulses to DATA block, and if only if it fails,
+    // output them as they are. Hint the packer about the maximum pulse
+    // sequence allowed, including the possible leading and trailing zero
+    // pulses which were added due to the forced level adjustments.
 
-    tzx_render_gdb_pulses( level, initial_level, buffer ) ;
+    tzx_render_gdb_pulses( initial_level, buffer, symbol_pulses + 2 ) ;
 
     // Now render the pause.
 

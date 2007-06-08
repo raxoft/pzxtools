@@ -16,7 +16,7 @@ namespace {
 FILE * output_file ;
 
 /**
- * Buffer used for PZX header as well as for temporary data.
+ * Buffer used for PZX header.
  */
 Buffer header_buffer ;
 
@@ -24,6 +24,11 @@ Buffer header_buffer ;
  * Buffer used for accumulating content of current PULS block.
  */
 Buffer pulse_buffer ;
+
+/**
+ * Buffer used for temporary block data.
+ */
+Buffer data_buffer ;
 
 /**
  * Count and duration of most recently stored pulses, not yet commited to the pulse buffer.
@@ -339,27 +344,27 @@ void pzx_data(
 
     // Prepare the header.
 
-    header_buffer.write_little< u32 >( ( initial_level << 31 ) | bit_count ) ;
-    header_buffer.write_little< u16 >( tail_cycles ) ;
-    header_buffer.write_little< u8 >( pulse_count_0 ) ;
-    header_buffer.write_little< u8 >( pulse_count_1 ) ;
+    data_buffer.write_little< u32 >( ( initial_level << 31 ) | bit_count ) ;
+    data_buffer.write_little< u16 >( tail_cycles ) ;
+    data_buffer.write_little< u8 >( pulse_count_0 ) ;
+    data_buffer.write_little< u8 >( pulse_count_1 ) ;
 
     // Store the sequences.
 
     for ( uint i = 0 ; i < pulse_count_0 ; i++ ) {
-        header_buffer.write_little< u16 >( pulse_sequence_0[ i ] ) ;
+        data_buffer.write_little< u16 >( pulse_sequence_0[ i ] ) ;
     }
     for ( uint i = 0 ; i < pulse_count_1 ; i++ ) {
-        header_buffer.write_little< u16 >( pulse_sequence_1[ i ] ) ;
+        data_buffer.write_little< u16 >( pulse_sequence_1[ i ] ) ;
     }
 
     // Copy the bit stream data themselves.
 
-    header_buffer.write( data, ( bit_count + 7 ) / 8 ) ;
+    data_buffer.write( data, ( bit_count + 7 ) / 8 ) ;
 
     // Now write the entire block to the file.
 
-    pzx_write_buffer( PZX_DATA, header_buffer ) ;
+    pzx_write_buffer( PZX_DATA, data_buffer ) ;
 }
 
 /**
@@ -373,8 +378,8 @@ void pzx_pause( const uint duration, const bool level )
     hope( duration < 0x80000000 ) ;
 
     pzx_flush() ;
-    header_buffer.write_little< u32 >( ( level << 31 ) | duration ) ;
-    pzx_write_buffer( PZX_PAUSE, header_buffer ) ;
+    data_buffer.write_little< u32 >( ( level << 31 ) | duration ) ;
+    pzx_write_buffer( PZX_PAUSE, data_buffer ) ;
 }
 
 /**
@@ -385,8 +390,8 @@ void pzx_stop( const uint flags )
     hope( flags < 0x8000 ) ;
 
     pzx_flush() ;
-    header_buffer.write_little< u16 >( flags ) ;
-    pzx_write_buffer( PZX_STOP, header_buffer ) ;
+    data_buffer.write_little< u16 >( flags ) ;
+    pzx_write_buffer( PZX_STOP, data_buffer ) ;
 }
 
 /**
@@ -405,4 +410,20 @@ void pzx_browse( const char * const string )
 {
     hope( string ) ;
     pzx_browse( string, std::strlen( string ) ) ;
+}
+
+/**
+ * Try to pack given pulses to DATA block, and output them as pulses if it fails.
+ */
+bool pzx_pack(
+    const word * const data,
+    const uint length,
+    const bool initial_level,
+    const uint sequence_limit,
+    const uint tail_cycles
+)
+{
+    hope( data || length == 0 ) ;
+
+    return false ;
 }

@@ -303,7 +303,11 @@ void tzx_render_gdb_pulses( const bool initial_level, Buffer & buffer, const uin
     const word * const pulses = buffer.get_typed_data< word >() ;
     const uint pulse_count = buffer.get_data_size() / 2 ;
 
-    pzx_pack( pulses, pulse_count, initial_level, sequence_limit, 0 ) ;
+    const uint tail_cycles = 0 ;
+
+    if ( ! pzx_pack( pulses, pulse_count, initial_level, sequence_limit, tail_cycles ) ) {
+        pzx_pulses( pulses, pulse_count, initial_level, tail_cycles ) ;
+    }
 
     buffer.clear() ;
 }

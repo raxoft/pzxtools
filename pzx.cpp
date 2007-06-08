@@ -373,7 +373,7 @@ void pzx_data(
 }
 
 /**
- * Test if given sequence pulse matches pulses in given pulse stream.
+ * Test if given pulse sequence matches pulses in given pulse stream.
  */
 bool pzx_matches( const word * const pulses, const word * const end, const word * const sequence, const uint count )
 {
@@ -397,19 +397,21 @@ bool pzx_matches( const word * const pulses, const word * const end, const word 
 }
 
 /**
- * Try to pack given pulses to DATA block using given pulse sequences.
+ * Try to pack given pulses to PZX data block using given pulse sequences.
  */
 bool pzx_pack(
     const word * const pulses,
     const uint pulse_count,
     const bool initial_level,
-    const word * const sequence_0,
-    const word * const sequence_1,
     const uint pulse_count_0,
     const uint pulse_count_1,
+    const word * const sequence_0,
+    const word * const sequence_1,
     const uint tail_cycles
 )
 {
+    hope( pulses ) ;
+    hope( pulse_count > 0 ) ;
     hope( pulse_count_0 > 0 ) ;
     hope( pulse_count_0 <= 0xFF ) ;
     hope( pulse_count_1 > 0 ) ;
@@ -427,7 +429,7 @@ bool pzx_pack(
     byte value = 0 ;
     uint bit_count = 0 ;
 
-    // Try packing until we get out
+    // Try packing until we reach the end of the pulse stream.
 
     while ( data < end ) {
 
@@ -490,7 +492,7 @@ bool pzx_pack(
 }
 
 /**
- * Try to pack given pulses to DATA block, and output them as pulses if it fails.
+ * Try to pack given pulses to PZX data block, guessing the pulse sequences automatically.
  */
 bool pzx_pack(
     const word * const pulses,
@@ -502,8 +504,7 @@ bool pzx_pack(
 {
     hope( pulses || pulse_count == 0 ) ;
 
-    // Make sure the limit is sane. Note that it can be zero
-    // in which case the packing is skipped.
+    // Make sure the limit is sane.
 
     uint limit = ( sequence_limit <= 0xFF ? sequence_limit : 0xFF ) ;
 
@@ -518,6 +519,9 @@ bool pzx_pack(
     for ( uint pulse_count_0 = limit ; pulse_count_0 > 0 ; pulse_count_0-- ) {
 
         // Find where the other sequence starts.
+        //
+        // Note that matching fails before we try to reach behind the buffer end,
+        // so we don't have to deal with that explicitly.
 
         const word * sequence_1 = pulses ;
 
@@ -525,31 +529,44 @@ bool pzx_pack(
             sequence_1 += pulse_count_0 ;
         }
 
-        // In case the entire stream can be encoded with just one sequence, do that.
+        // In the rare case the entire stream can be encoded with just one sequence, do that.
 
         if ( sequence_1 == end ) {
             const word empty_sequence = 0 ;
-            pzx_pack( pulses, pulse_count, initial_level, sequence_0, &empty_sequence, pulse_count_0, 1, tail_cycles ) ;
+            pzx_pack( pulses, pulse_count, initial_level, pulse_count_0, 1, sequence_0, &empty_sequence, tail_cycles ) ;
             return true ;
         }
 
-        // Otherwise try shortening the secon sequence and test if we get a match.
+        // Otherwise try shortening the second sequence until the packing succeeds.
+        //
+        // Again, note that matching fails before we try to reach behind the buffer end,
+        // so we don't have to deal with that explicitly.
 
         for ( uint pulse_count_1 = limit ; pulse_count_1 > 0 ; pulse_count_1-- ) {
-
-            // Try again if the sequences are too long.
-
-            if ( pulse_count_0 + pulse_count_1 > pulse_count ) {
-                continue ;
-            }
-
-            if ( pzx_pack( pulses, pulse_count, initial_level, sequence_0, sequence_1, pulse_count_0, pulse_count_1, tail_cycles ) ) {
+            if ( pzx_pack( pulses, pulse_count, initial_level, pulse_count_0, pulse_count_1, sequence_0, sequence_1, tail_cycles ) ) {
                 return true ;
             }
         }
     }
 
-    // Otherwise output the pulses as they are.
+    // Report failure.
+
+    return false ;
+}
+
+/**
+ * Output given pulses to the output.
+ */
+void pzx_pulses(
+    const word * const pulses,
+    const uint pulse_count,
+    const bool initial_level,
+    const uint tail_cycles
+)
+{
+    hope( pulses || pulse_count == 0 ) ;
+
+    // Output each pulse in turn.
 
     bool level = initial_level ;
 
@@ -559,10 +576,6 @@ bool pzx_pack(
     }
 
     pzx_out( tail_cycles, level ) ;
-
-    // And report that packing did not succeed.
-
-    return false ;
 }
 
 /**

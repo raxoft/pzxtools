@@ -63,12 +63,16 @@ void pzx_data(
     const uint tail_cycles
 ) ;
 
-void pzx_pause( const uint duration, const bool level ) ;
-
-void pzx_stop( const uint flags ) ;
-
-void pzx_browse( const void * const data, const uint size ) ;
-void pzx_browse( const char * const string ) ;
+bool pzx_pack(
+    const word * const pulses,
+    const uint pulse_count,
+    const bool initial_level,
+    const word * const sequence_0,
+    const word * const sequence_1,
+    const uint pulse_count_0,
+    const uint pulse_count_1,
+    const uint tail_cycles
+) ;
 
 bool pzx_pack(
     const word * const pulses,
@@ -77,5 +81,19 @@ bool pzx_pack(
     const uint sequence_limit,
     const uint tail_cycles
 ) ;
+
+void pzx_pulses(
+    const word * const pulses,
+    const uint pulse_count,
+    const bool initial_level,
+    const uint tail_cycles
+) ;
+
+void pzx_pause( const uint duration, const bool level ) ;
+
+void pzx_stop( const uint flags ) ;
+
+void pzx_browse( const void * const data, const uint size ) ;
+void pzx_browse( const char * const string ) ;
 
 #endif // PZX_H

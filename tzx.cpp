@@ -296,9 +296,25 @@ void tzx_render_pause( bool & level, const uint duration )
 }
 
 /**
- * Output GDB symbol pulse sequence to the output stream.
+ * Output pulses from given buffer.
  */
-void tzx_render_gdb_symbol( bool & level, const byte * sequence, const uint pulse_limit )
+void tzx_render_gdb_pulses( bool & level, const bool initial_level, Buffer & buffer )
+{
+    level = initial_level ;
+
+    const word * pulses = buffer.get_typed_data< word >() ;
+
+    for ( uint i = ( buffer.get_data_size() / 2 ) ; i-- > 0 ; ) {
+        tzx_render_pulse( level, *pulses++ ) ;
+    }
+
+    buffer.clear() ;
+}
+
+/**
+ * Output GDB symbol pulse sequence to given buffer.
+ */
+void tzx_render_gdb_symbol( bool & level, Buffer & buffer, const byte * sequence, const uint pulse_limit )
 {
     // Adjust the output level.
 
@@ -307,14 +323,21 @@ void tzx_render_gdb_symbol( bool & level, const byte * sequence, const uint puls
             break ;
         }
         case 1: {
+            buffer.write< word >( 0 ) ;
             level = ! level ;
             break ;
         }
         case 2: {
+            if ( level ) {
+                buffer.write< word >( 0 ) ;
+            }
             level = false ;
             break ;
         }
         case 3: {
+            if ( ! level ) {
+                buffer.write< word >( 0 ) ;
+            }
             level = true ;
             break ;
         }
@@ -327,36 +350,14 @@ void tzx_render_gdb_symbol( bool & level, const byte * sequence, const uint puls
     // Now output the pulses.
 
     for ( uint i = 0 ; i < pulse_limit ; i++ ) {
-        uint duration = *sequence++ ;
-        duration += *sequence++ << 8 ;
-        if ( duration == 0 ) {
-            break ;
-        }
-        tzx_render_pulse( level, duration ) ;
-    }
-}
-
-/**
- * Extract given GDB symbol pulse sequence to given buffer.
- */
-uint tzx_extract_gdb_symbol( Buffer & buffer, const byte * sequence, const uint pulse_limit )
-{
-    // Extract the level flags.
-
-    const uint flags = *sequence++ ;
-
-    // Extract the pulses.
-
-    for ( uint i = 0 ; i < pulse_limit ; i++ ) {
         word duration = *sequence++ ;
         duration += *sequence++ << 8 ;
         if ( duration == 0 ) {
             break ;
         }
         buffer.write< word >( duration ) ;
-   }
-
-   return flags ;
+        level = ! level ;
+    }
 }
 
 /**
@@ -364,6 +365,7 @@ uint tzx_extract_gdb_symbol( Buffer & buffer, const byte * sequence, const uint 
  */
 void tzx_render_gdb_pilot(
     bool & level,
+    Buffer & buffer,
     const byte * data,
     uint count,
     const byte * const table,
@@ -371,6 +373,8 @@ void tzx_render_gdb_pilot(
     const uint symbol_pulses
 )
 {
+    const bool initial_level = level ;
+
     // Output all pilot symbols.
 
     while ( count-- > 0 ) {
@@ -396,9 +400,14 @@ void tzx_render_gdb_pilot(
         // Output the symbol as many times as needed.
 
         while ( repeat_count-- > 0 ) {
-            tzx_render_gdb_symbol( level, sequence, symbol_pulses ) ;
+            tzx_render_gdb_symbol( level, buffer, sequence, symbol_pulses ) ;
         }
     }
+
+    // Now simply send all the pulses to the output stream, without any
+    // extra processing.
+
+    tzx_render_gdb_pulses( level, initial_level, buffer ) ;
 }
 
 /**
@@ -406,6 +415,7 @@ void tzx_render_gdb_pilot(
  */
 void tzx_render_gdb_data(
     bool & level,
+    Buffer & buffer,
     const byte * data,
     uint count,
     const uint bit_count,
@@ -415,6 +425,8 @@ void tzx_render_gdb_data(
     const uint pause_length
 )
 {
+    const bool initial_level = level ;
+
     // Output all data symbols.
 
     uint mask = 0x80 ;
@@ -447,124 +459,17 @@ void tzx_render_gdb_data(
 
         // Output the symbol.
 
-        tzx_render_gdb_symbol( level, sequence, symbol_pulses ) ;
+        tzx_render_gdb_symbol( level, buffer, sequence, symbol_pulses ) ;
     }
+
+    // Now simply send all the pulses to the output stream, without any
+    // extra processing.
+
+    tzx_render_gdb_pulses( level, initial_level, buffer ) ;
 
     // Now render the pause.
 
     tzx_render_pause( level, pause_length ) ;
-}
-
-/**
- * Try to store the GDB data directly to the output stream.
- */
-bool tzx_store_gdb_data(
-    bool & level,
-    const byte * data,
-    const uint count,
-    const uint bit_count,
-    const byte * const table,
-    const uint symbol_count,
-    const uint symbol_pulses,
-    const uint pause_length
-)
-{
-    // If there is no real output, we can as well process it as pulses.
-
-    if ( count == 0 ) {
-        return false ;
-    }
-
-    // Only 2 symbols are supported.
-
-    if ( symbol_count != 2 ) {
-        return false ;
-    }
-
-    hope( bit_count == 1 ) ;
-
-    // Extract the bit sequences and their level flags.
-
-    Buffer bit_0_buffer( 512 ) ;
-    const uint bit_0_flags = tzx_extract_gdb_symbol( bit_0_buffer, table, symbol_pulses ) ;
-
-    Buffer bit_1_buffer( 512 ) ;
-    const uint bit_1_flags = tzx_extract_gdb_symbol( bit_1_buffer, table + ( 2 * symbol_pulses + 1 ), symbol_pulses ) ;
-
-    // Check if it is one of the simple combinations which are easy to
-    // achieve, and reject anything else.
-
-    if ( bit_0_flags != bit_1_flags ) {
-
-        // Mixed flags are perhaps too complex to be dealt with. Use pulses instead.
-
-        return false ;
-    }
-
-    switch ( bit_0_flags ) {
-        case 0: {
-
-            // Simple case, no change needed.
-
-            break ;
-        }
-        case 1: {
-
-            // This might be solved by prepending zero pulse in some cases,
-            // but why bother.
-
-            return false ;
-        }
-        case 2: {
-
-            // Force low level.
-
-            level = false ;
-            break ;
-        }
-        case 3: {
-
-            // Force high level.
-
-            level = true ;
-            break ;
-        }
-
-        default: {
-
-            // Invalid flags, fall back to pulses anyway.
-
-            return false ;
-        }
-    }
-
-    // In case the level was forced, make sure both sequences are even by
-    // appending zero pulse if necessary.
-
-    if ( bit_0_flags >= 2 ) {
-        if ( ( bit_0_buffer.get_data_size() & 2 ) != 0 ) {
-            bit_0_buffer.write< word >( 0 ) ;
-        }
-        if ( ( bit_1_buffer.get_data_size() & 2 ) != 0 ) {
-            bit_1_buffer.write< word >( 0 ) ;
-        }
-    }
-
-    // Now store the data to the DATA block directly.
-    //
-    // Note that the sequences may not be too long, as they were 256 bytes
-    // at maximum originally and we did not increase it in that case.
-
-    const word * bit_0_sequence = bit_0_buffer.get_typed_data< word >() ;
-    const word * bit_1_sequence = bit_1_buffer.get_typed_data< word >() ;
-    uint bit_0_length = bit_0_buffer.get_data_size() / 2 ;
-    uint bit_1_length = bit_1_buffer.get_data_size() / 2 ;
-
-    tzx_render_data( level, data, count, bit_0_length, bit_1_length, bit_0_sequence, bit_1_sequence, TAIL_CYCLES, pause_length ) ;
-
-    // FIXME: adjust level appropriatelly according to last symbol output.
-
-    return true ;
 }
 
 /**
@@ -632,14 +537,12 @@ void tzx_render_gdb( bool & level, const byte * const block, const uint block_si
         return ;
     }
 
-    // Now render the pilot and the data. For data, first try to output the
-    // data as they are, only if it is not possible render it as pulses.
+    // Now render the pilot and the data, if either is present.
 
-    tzx_render_gdb_pilot( level, pilot_stream, pilot_symbols, pilot_table, pilot_symbol_count, pilot_symbol_pulses ) ;
+    Buffer buffer ;
 
-    if ( ! tzx_store_gdb_data( level, data_stream, data_symbols, data_symbol_bits, data_table, data_symbol_count, data_symbol_pulses, pause_length ) ) {
-        tzx_render_gdb_data( level, data_stream, data_symbols, data_symbol_bits, data_table, data_symbol_count, data_symbol_pulses, pause_length ) ;
-    }
+    tzx_render_gdb_pilot( level, buffer, pilot_stream, pilot_symbols, pilot_table, pilot_symbol_count, pilot_symbol_pulses ) ;
+    tzx_render_gdb_data( level, buffer, data_stream, data_symbols, data_symbol_bits, data_table, data_symbol_count, data_symbol_pulses, pause_length ) ;
 }
 
 /**

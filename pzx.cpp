@@ -31,6 +31,11 @@ Buffer pulse_buffer ;
 Buffer data_buffer ;
 
 /**
+ * Buffer used for pulse packing.
+ */
+Buffer pack_buffer ;
+
+/**
  * Count and duration of most recently stored pulses, not yet commited to the pulse buffer.
  */
 //@{
@@ -414,6 +419,8 @@ bool pzx_pack(
 
     // Prepare for packing.
 
+    pack_buffer.clear() ;
+
     const word * const end = pulses + pulse_count ;
     const word * data = pulses ;
 
@@ -439,7 +446,6 @@ bool pzx_pack(
         // Otherwise report failure.
 
         else {
-            data_buffer.clear() ;
             return false ;
         }
 
@@ -448,7 +454,7 @@ bool pzx_pack(
         bit_count++ ;
 
         if ( ( bit_count & 7 ) == 0 ) {
-            data_buffer.write< byte >( value ) ;
+            pack_buffer.write< byte >( value ) ;
         }
     }
 
@@ -462,13 +468,13 @@ bool pzx_pack(
         for ( uint i = extra_bits ; i < 8 ; i++ ) {
             value <<= 1 ;
         }
-        data_buffer.write< byte >( value ) ;
+        pack_buffer.write< byte >( value ) ;
     }
 
     // Now write the data to the DATA block.
 
     pzx_data(
-        data_buffer.get_data(),
+        pack_buffer.get_data(),
         bit_count,
         initial_level,
         pulse_count_0,
@@ -477,8 +483,6 @@ bool pzx_pack(
         sequence_1,
         tail_cycles
     ) ;
-
-    data_buffer.clear() ;
 
     // Report success.
 

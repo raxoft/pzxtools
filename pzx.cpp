@@ -368,6 +368,200 @@ void pzx_data(
 }
 
 /**
+ * Test if given sequence pulse matches pulses in given pulse stream.
+ */
+bool pzx_matches( const word * const pulses, const word * const end, const word * const sequence, const uint count )
+{
+    hope( pulses ) ;
+    hope( end ) ;
+    hope( pulses <= end ) ;
+    hope( sequence ) ;
+    hope( count > 0 ) ;
+
+    if ( count > uint( end - pulses ) ) {
+        return false ;
+    }
+
+    for ( uint i = 0 ; i < count ; i++ ) {
+        if ( pulses[ i ] != sequence[ i ] ) {
+            return false ;
+        }
+    }
+
+    return true ;
+}
+
+/**
+ * Try to pack given pulses to DATA block using given pulse sequences.
+ */
+bool pzx_pack(
+    const word * const pulses,
+    const uint pulse_count,
+    const bool initial_level,
+    const word * const sequence_0,
+    const word * const sequence_1,
+    const uint pulse_count_0,
+    const uint pulse_count_1,
+    const uint tail_cycles
+)
+{
+    hope( pulse_count_0 > 0 ) ;
+    hope( pulse_count_0 <= 0xFF ) ;
+    hope( pulse_count_1 > 0 ) ;
+    hope( pulse_count_1 <= 0xFF ) ;
+    hope( sequence_0 ) ;
+    hope( sequence_1 ) ;
+
+    // Prepare for packing.
+
+    const word * const end = pulses + pulse_count ;
+    const word * data = pulses ;
+
+    byte value = 0 ;
+    uint bit_count = 0 ;
+
+    // Try packing until we get out
+
+    while ( data < end ) {
+
+        // See which of the sequences matches at given position.
+
+        if ( pzx_matches( data, end, sequence_0, pulse_count_0 ) ) {
+            value <<= 1 ;
+            data += pulse_count_0 ;
+        }
+        else if ( pzx_matches( data, end, sequence_1, pulse_count_1 ) ) {
+            value <<= 1 ;
+            value |= 1 ;
+            data += pulse_count_1 ;
+        }
+
+        // Otherwise report failure.
+
+        else {
+            data_buffer.clear() ;
+            return false ;
+        }
+
+        // Include the new bit, and eventually store the collected byte to the buffer.
+
+        bit_count++ ;
+
+        if ( ( bit_count & 7 ) == 0 ) {
+            data_buffer.write< byte >( value ) ;
+        }
+    }
+
+    hope( data == end ) ;
+
+    // Output the last byte, if any.
+
+    const uint extra_bits = ( bit_count & 7 ) ;
+
+    if ( extra_bits > 0 ) {
+        for ( uint i = extra_bits ; i < 8 ; i++ ) {
+            value <<= 1 ;
+        }
+        data_buffer.write< byte >( value ) ;
+    }
+
+    // Now write the data to the DATA block.
+
+    pzx_data(
+        data_buffer.get_data(),
+        bit_count,
+        initial_level,
+        pulse_count_0,
+        pulse_count_1,
+        sequence_0,
+        sequence_1,
+        tail_cycles
+    ) ;
+
+    data_buffer.clear() ;
+
+    // Report success.
+
+    return true ;
+}
+
+/**
+ * Try to pack given pulses to DATA block, and output them as pulses if it fails.
+ */
+bool pzx_pack(
+    const word * const pulses,
+    const uint pulse_count,
+    const bool initial_level,
+    const uint sequence_limit,
+    const uint tail_cycles
+)
+{
+    hope( pulses || pulse_count == 0 ) ;
+
+    // Make sure the limit is sane. Note that it can be zero
+    // in which case the packing is skipped.
+
+    uint limit = ( sequence_limit <= 0xFF ? sequence_limit : 0xFF ) ;
+
+    // Try all sequence combinations shorter than given limit.
+    //
+    // One of the sequences always starts at the beginning.
+
+    const word * const end = pulses + pulse_count ;
+
+    const word * const sequence_0 = pulses ;
+
+    for ( uint pulse_count_0 = limit ; pulse_count_0 > 0 ; pulse_count_0-- ) {
+
+        // Find where the other sequence starts.
+
+        const word * sequence_1 = pulses ;
+
+        while ( pzx_matches( sequence_1, end, sequence_0, pulse_count_0 ) ) {
+            sequence_1 += pulse_count_0 ;
+        }
+
+        // In case the entire stream can be encoded with just one sequence, do that.
+
+        if ( sequence_1 == end ) {
+            const word empty_sequence = 0 ;
+            pzx_pack( pulses, pulse_count, initial_level, sequence_0, &empty_sequence, pulse_count_0, 1, tail_cycles ) ;
+            return true ;
+        }
+
+        // Otherwise try shortening the secon sequence and test if we get a match.
+
+        for ( uint pulse_count_1 = limit ; pulse_count_1 > 0 ; pulse_count_1-- ) {
+
+            // Try again if the sequences are too long.
+
+            if ( pulse_count_0 + pulse_count_1 > pulse_count ) {
+                continue ;
+            }
+
+            if ( pzx_pack( pulses, pulse_count, initial_level, sequence_0, sequence_1, pulse_count_0, pulse_count_1, tail_cycles ) ) {
+                return true ;
+            }
+        }
+    }
+
+    // Otherwise output the pulses as they are.
+
+    bool level = initial_level ;
+
+    for ( uint i = 0 ; i < pulse_count ; i++ ) {
+        pzx_out( pulses[ i ], level ) ;
+        level = ! level ;
+    }
+
+    pzx_out( tail_cycles, level ) ;
+
+    // And report that packing did not succeed.
+
+    return false ;
+}
+
+/**
  * Append PZX pause block of pause of given duration and level to PZX output file.
  *
  * @note The duration must fit in 31 bits.
@@ -410,20 +604,4 @@ void pzx_browse( const char * const string )
 {
     hope( string ) ;
     pzx_browse( string, std::strlen( string ) ) ;
-}
-
-/**
- * Try to pack given pulses to DATA block, and output them as pulses if it fails.
- */
-bool pzx_pack(
-    const word * const data,
-    const uint length,
-    const bool initial_level,
-    const uint sequence_limit,
-    const uint tail_cycles
-)
-{
-    hope( data || length == 0 ) ;
-
-    return false ;
 }

@@ -71,8 +71,8 @@ void pzx_browse( const void * const data, const uint size ) ;
 void pzx_browse( const char * const string ) ;
 
 bool pzx_pack(
-    const word * const data,
-    const uint length,
+    const word * const pulses,
+    const uint pulse_count,
     const bool initial_level,
     const uint sequence_limit,
     const uint tail_cycles

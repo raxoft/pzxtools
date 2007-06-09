@@ -3,11 +3,14 @@ CXXFLAGS = -g -DDEBUG -Wall
 #CXXFLAGS = -O2 -Wall
 #LDLIBS = -lm
 
-PROGS=tzx2pzx pzx2txt txt2pzx
+PROGS=tzx2pzx csw2pzx pzx2txt txt2pzx
 
 all: $(PROGS)
 
 tzx2pzx: tzx2pzx.o tzx.o csw.o pzx.o
+	$(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+csw2pzx: csw2pzx.o csw.o pzx.o
 	$(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 pzx2txt: pzx2txt.o
@@ -34,6 +37,7 @@ dep:
 
 TOUCH=touch
 csw.o : csw.cpp csw.h pzx.h
+csw2pzx.o : csw2pzx.cpp csw.h pzx.h
 pzx.o : pzx.cpp buffer.h pzx.h
 pzx2txt.o : pzx2txt.cpp pzx.h
 txt2pzx.o : txt2pzx.cpp pzx.h
@@ -41,7 +45,7 @@ tzx.o : tzx.cpp csw.h endian.h pzx.h tzx.h
 tzx2pzx.o : tzx2pzx.cpp pzx.h tzx.h
 buffer.h : debug.h endian.h
 	$(TOUCH) $@
-csw.h : types.h
+csw.h : buffer.h
 	$(TOUCH) $@
 endian.h : types.h
 	$(TOUCH) $@

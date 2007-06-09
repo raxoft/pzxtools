@@ -3,6 +3,7 @@
 // Rendering of TZX files.
 
 #include "tzx.h"
+#include "csw.h"
 #include "pzx.h"
 #include "endian.h"
 

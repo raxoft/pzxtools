@@ -53,7 +53,7 @@ uint csw_render_block( bool & level, const uint sample_rate, const byte * const 
 
         // Now output the pulse, converting the sample count to duration in 3.5MHz T cycles first.
 
-        long long unsigned duration = ( ( 3500000ull * duration ) / sample_rate ) ;
+        long long unsigned duration = ( ( 3500000ull * sample_count ) / sample_rate ) ;
         const uint limit = 0xFFFFFFFF ;
 
         while ( duration > limit ) {
@@ -122,21 +122,20 @@ void csw_render( const byte * const data, const uint size )
     uint sample_rate = 0 ;
     uint compression = 0 ;
     uint flags = 0 ;
-    uint data_offset = 0 ;
+    uint data_offset = header_size ;
 
     switch ( major ) {
         case 1: {
-            sample_rate = GET4(0x19) ;
+            sample_rate = GET2(0x19) ;
             compression = GET1(0x1B) ;
             flags = GET1(0x1C) ;
-            data_offset = 0x20 ;
             break ;
         }
         case 2: {
             sample_rate = GET4(0x19) ;
             compression = GET1(0x21) ;
             flags = GET1(0x22) ;
-            data_offset = 0x34+GET1(0x23) ;
+            data_offset += GET1(0x23) ;
             break ;
         }
     }

@@ -1,3 +1,4 @@
-file tzx2pzx
+#file tzx2pzx
+file csw2pzx
 break main
-run
+run <data3/StarBike1.csw

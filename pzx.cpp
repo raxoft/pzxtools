@@ -332,15 +332,12 @@ void pzx_data(
     const uint tail_cycles
 )
 {
-    hope( data ) ;
-    hope( bit_count > 0 ) ;
+    hope( data || bit_count == 0 ) ;
     hope( bit_count < 0x80000000 ) ;
-    hope( pulse_count_0 > 0 ) ;
     hope( pulse_count_0 <= 0xFF ) ;
-    hope( pulse_count_1 > 0 ) ;
     hope( pulse_count_1 <= 0xFF ) ;
-    hope( pulse_sequence_0 ) ;
-    hope( pulse_sequence_1 ) ;
+    hope( pulse_sequence_0 || pulse_count_0 == 0 ) ;
+    hope( pulse_sequence_1 || pulse_count_1 == 0 ) ;
     hope( tail_cycles <= 0xFFFF ) ;
 
     // Flush previously buffered output.
@@ -381,9 +378,8 @@ bool pzx_matches( const word * const pulses, const word * const end, const word 
     hope( end ) ;
     hope( pulses <= end ) ;
     hope( sequence ) ;
-    hope( count > 0 ) ;
 
-    if ( count > uint( end - pulses ) ) {
+    if ( ( count == 0 ) || ( count > uint( end - pulses ) ) ) {
         return false ;
     }
 
@@ -412,12 +408,10 @@ bool pzx_pack(
 {
     hope( pulses ) ;
     hope( pulse_count > 0 ) ;
-    hope( pulse_count_0 > 0 ) ;
     hope( pulse_count_0 <= 0xFF ) ;
-    hope( pulse_count_1 > 0 ) ;
     hope( pulse_count_1 <= 0xFF ) ;
-    hope( sequence_0 ) ;
-    hope( sequence_1 ) ;
+    hope( sequence_0 || pulse_count_0 == 0 ) ;
+    hope( sequence_1 || pulse_count_1 == 0 ) ;
 
     // Prepare for packing.
 
@@ -532,8 +526,7 @@ bool pzx_pack(
         // In the rare case the entire stream can be encoded with just one sequence, do that.
 
         if ( sequence_1 == end ) {
-            const word empty_sequence = 0 ;
-            pzx_pack( pulses, pulse_count, initial_level, pulse_count_0, 1, sequence_0, &empty_sequence, tail_cycles ) ;
+            pzx_pack( pulses, pulse_count, initial_level, pulse_count_0, 0, sequence_0, NULL, tail_cycles ) ;
             return true ;
         }
 
@@ -585,7 +578,6 @@ void pzx_pulses(
  */
 void pzx_pause( const uint duration, const bool level )
 {
-    hope( duration > 0 ) ;
     hope( duration < 0x80000000 ) ;
 
     pzx_flush() ;
@@ -598,7 +590,7 @@ void pzx_pause( const uint duration, const bool level )
  */
 void pzx_stop( const uint flags )
 {
-    hope( flags < 0x8000 ) ;
+    hope( flags <= 0xFFFF ) ;
 
     pzx_flush() ;
     data_buffer.write_little< u16 >( flags ) ;

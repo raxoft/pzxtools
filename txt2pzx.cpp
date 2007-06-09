@@ -306,7 +306,7 @@ void finish_block( uint & tag, const uint new_tag )
                 bit_count += extra_bit_count ;
             }
             if ( bit_count == 0 ) {
-                fail( "empty data block" ) ;
+                warn( "the data block is empty" ) ;
             }
             if ( expected_data_size > 0 && ( bit_count / 8 ) != expected_data_size ) {
                 warn( "the specified byte size %u doesn't match the actual size %u", expected_data_size, bit_count / 8 ) ;
@@ -315,11 +315,11 @@ void finish_block( uint & tag, const uint new_tag )
             const uint pulse_count_0 = bit_0_buffer.get_data_size() / 2 ;
             const uint pulse_count_1 = bit_1_buffer.get_data_size() / 2 ;
 
-            if ( pulse_count_0 == 0 || pulse_count_1 == 0 ) {
-                fail( "unspecified bit sequence" ) ;
-            }
             if ( pulse_count_0 > 0xFF || pulse_count_1 > 0xFF ) {
                 fail( "too many pulses in bit sequence" ) ;
+            }
+            if ( pulse_count_0 == 0 || pulse_count_1 == 0 ) {
+                warn( "the bit sequence is empty" ) ;
             }
 
             pzx_data(

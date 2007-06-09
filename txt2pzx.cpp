@@ -411,7 +411,9 @@ void process_line( uint & last_block_tag, const char * const line )
 
             uint duration ;
             if ( ! parse_number( duration, s ) ) {
-                finish_block( last_block_tag, tag ) ;
+                if ( option_preserve_pulses || last_block_tag != tag ) {
+                    finish_block( last_block_tag, tag ) ;
+                }
                 output_level = false ;
                 break ;
             }
@@ -424,11 +426,14 @@ void process_line( uint & last_block_tag, const char * const line )
             // Store the pulse sequence as specified if requested and possible.
 
             if ( option_preserve_pulses ) {
-                if ( count < 0x8000 && duration < 0x8000000 ) {
-                    pzx_store( count, duration ) ;
-                    break ;
+                if ( count >= 0x8000 ) {
+                    fail( "pulse repeat count %u is out of range to be stored as it is", count ) ;
                 }
-                warn( "pulse values %u*%u are out of range to be stored as they are", duration, count ) ;
+                if ( duration >= 0x80000000 ) {
+                    fail( "pulse duration %u is out of range to be stored as it is", duration ) ;
+                }
+                pzx_store( count, duration ) ;
+                break ;
             }
 
             // Otherwise let the output stream process each pulse as needed.

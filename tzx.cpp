@@ -305,6 +305,9 @@ void tzx_render_gdb_pulses( const bool initial_level, Buffer & buffer, const uin
 
     const uint tail_cycles = 0 ;
 
+    // FIXME: use tail cycles if possible.
+    // FIXME: use original assignment of pulse sequences if possible.
+
     if ( ! pzx_pack( pulses, pulse_count, initial_level, sequence_limit, tail_cycles ) ) {
         pzx_pulses( pulses, pulse_count, initial_level, tail_cycles ) ;
     }

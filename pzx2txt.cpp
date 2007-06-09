@@ -19,6 +19,11 @@ bool option_dump_ascii ;
  */
 bool option_skip_data ;
 
+/**
+ * Flag set when each pulse should be printed on separate line.
+ */
+bool option_expand_pulses ;
+
 } ;
 
 /**
@@ -178,6 +183,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
         case PZX_PULSES: {
             fprintf( output_file, "PULSES\n" ) ;
             while ( data_size > 0 ) {
+
                 uint count = 1 ;
                 uint duration = GET2() ;
                 if ( duration > 0x8000 ) {
@@ -189,11 +195,19 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
                     duration <<= 16 ;
                     duration |= GET2() ;
                 }
-                fprintf( output_file, "PULSE %u", duration ) ;
-                if ( count > 1 ) {
-                    fprintf( output_file, " %u", count ) ;
+
+                if ( option_expand_pulses ) {
+                    while ( count-- > 0 ) {
+                        fprintf( output_file, "PULSE %u\n", duration ) ;
+                    }
                 }
-                fprintf( output_file, "\n" ) ;
+                else {
+                    fprintf( output_file, "PULSE %u", duration ) ;
+                    if ( count > 1 ) {
+                        fprintf( output_file, " %u", count ) ;
+                    }
+                    fprintf( output_file, "\n" ) ;
+                }
             }
             break ;
         }
@@ -305,6 +319,10 @@ int main( int argc, char * * argv )
                 option_skip_data = true ;
                 break ;
             }
+            case 'e': {
+                option_expand_pulses = true ;
+                break ;
+            }
             default: {
                 fprintf( stderr, "error: invalid option %s\n", argv[ i ] ) ;
 
@@ -315,6 +333,7 @@ int main( int argc, char * * argv )
                 fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
                 fprintf( stderr, "-a     dump bytes in data blocks as ASCII characters when possible\n" ) ;
                 fprintf( stderr, "-d     don't dump content of data blocks\n" ) ;
+                fprintf( stderr, "-e     expand pulses, dumping each one on separate line\n" ) ;
                 return EXIT_FAILURE ;
             }
         }

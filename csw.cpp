@@ -80,6 +80,28 @@ void csw_unpack_block( Buffer & buffer, const byte * const data, const uint size
 }
 
 /**
+ * Render CSW encoded pulses to the output stream.
+ */
+uint csw_render_block( bool & level, const uint compression, const uint sample_rate, const byte * const data, const uint size )
+{
+    // Process the data depending on the compression.
+
+    switch ( compression ) {
+        case 1: {
+            return csw_render_block( level, sample_rate, data, size ) ;
+        }
+        case 2: {
+            Buffer buffer ;
+            csw_unpack_block( buffer, data, size ) ;
+            return csw_render_block( level, sample_rate, buffer.get_data(), buffer.get_data_size() ) ;
+        }
+        default: {
+            fail( "invalid CSW compression 0x%02x", compression ) ;
+        }
+    }
+}
+
+/**
  * Render given CSW file to the PZX output stream.
  */
 void csw_render( const byte * const data, const uint size )
@@ -161,23 +183,7 @@ void csw_render( const byte * const data, const uint size )
 
     // Process the data depending on the compression.
 
-    uint pulse_count ;
-
-    switch ( compression ) {
-        case 1: {
-            pulse_count = csw_render_block( level, sample_rate, block, block_size ) ;
-            break ;
-        }
-        case 2: {
-            Buffer buffer ;
-            csw_unpack_block( buffer, block, block_size ) ;
-            pulse_count = csw_render_block( level, sample_rate, buffer.get_data(), buffer.get_data_size() ) ;
-            break ;
-        }
-        default: {
-            fail( "invalid CSW compression 0x%02x", compression ) ;
-        }
-    }
+    const uint pulse_count = csw_render_block( level, compression, sample_rate, block, block_size ) ;
 
     // Verify the pulse count matched.
 

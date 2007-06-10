@@ -1,4 +1,5 @@
 #file tzx2pzx
 file csw2pzx
 break main
-run <data3/StarBike1.csw
+break csw_render
+run <data3/StarBike2.csw

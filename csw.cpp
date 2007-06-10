@@ -2,6 +2,10 @@
 
 // CSW support.
 
+#ifndef NO_ZLIB
+#include <zlib.h>
+#endif
+
 #include "csw.h"
 #include "pzx.h"
 
@@ -76,7 +80,58 @@ uint csw_render_block( bool & level, const uint sample_rate, const byte * const 
  */
 void csw_unpack_block( Buffer & buffer, const byte * const data, const uint size )
 {
-    fail( "not yet" ) ;
+    hope( data || size == 0 ) ;
+
+    if ( size == 0 ) {
+        return ;
+    }
+
+#ifdef NO_ZLIB
+
+    fail( "zlib support si not compiled in, so CSW Z-RLE compression is not supported" ) ;
+
+#else // NO_ZLIB
+
+    // Initialize the zlib stream stucture.
+
+    z_stream stream ;
+    stream.zalloc = Z_NULL ;
+    stream.zfree = Z_NULL ;
+    stream.opaque = NULL ;
+    stream.next_in = const_cast< byte * >( data ) ;
+    stream.avail_in = size ;
+
+    if ( inflateInit( &stream ) != Z_OK ) {
+        fail( "error initializing zlib decompressor for CSW block: %s", stream.msg ? stream.msg : "unknown error" ) ;
+    }
+
+    // Keep decompressing chunk by chunk, collecting the output in the
+    // output buffer.
+
+    int result ;
+
+    do {
+
+        const uint chunk_size = 16384 ;
+        byte chunk[ chunk_size ] ;
+
+        stream.next_out = chunk ;
+        stream.avail_out = chunk_size ;
+
+        result = inflate( &stream, Z_NO_FLUSH ) ;
+
+        if ( result != Z_OK && result != Z_STREAM_END ) {
+            fail( "error while decompressing CSW block: %s", stream.msg ? stream.msg : "unknown error" ) ;
+        }
+
+        buffer.write( chunk, chunk_size - stream.avail_out ) ;
+
+    } while ( result != Z_STREAM_END ) ;
+
+    inflateEnd( &stream ) ;
+
+#endif // NO_ZLIB
+
 }
 
 /**

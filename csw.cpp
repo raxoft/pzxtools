@@ -88,7 +88,8 @@ void csw_unpack_block( Buffer & buffer, const byte * const data, const uint size
 
 #ifdef NO_ZLIB
 
-    fail( "zlib support si not compiled in, so CSW Z-RLE compression is not supported" ) ;
+    warn( "zlib support si not compiled in, so CSW Z-RLE compression is not supported" ) ;
+    return ;
 
 #else // NO_ZLIB
 
@@ -102,7 +103,8 @@ void csw_unpack_block( Buffer & buffer, const byte * const data, const uint size
     stream.avail_in = size ;
 
     if ( inflateInit( &stream ) != Z_OK ) {
-        fail( "error initializing zlib decompressor for CSW block: %s", stream.msg ? stream.msg : "unknown error" ) ;
+        warn( "error initializing zlib decompressor for CSW block: %s", stream.msg ? stream.msg : "unknown error" ) ;
+        return ;
     }
 
     // Keep decompressing chunk by chunk, collecting the output in the
@@ -121,12 +123,15 @@ void csw_unpack_block( Buffer & buffer, const byte * const data, const uint size
         result = inflate( &stream, Z_NO_FLUSH ) ;
 
         if ( result != Z_OK && result != Z_STREAM_END ) {
-            fail( "error while decompressing CSW block: %s", stream.msg ? stream.msg : "unknown error" ) ;
+            warn( "error while decompressing CSW block: %s", stream.msg ? stream.msg : "unknown error" ) ;
+            break ;
         }
 
         buffer.write( chunk, chunk_size - stream.avail_out ) ;
 
     } while ( result != Z_STREAM_END ) ;
+
+    // Cleanup.
 
     inflateEnd( &stream ) ;
 
@@ -151,7 +156,8 @@ uint csw_render_block( bool & level, const uint compression, const uint sample_r
             return csw_render_block( level, sample_rate, buffer.get_data(), buffer.get_data_size() ) ;
         }
         default: {
-            fail( "invalid CSW compression 0x%02x", compression ) ;
+            warn( "unsupported CSW compression 0x%02x scheme", compression ) ;
+            return 0 ;
         }
     }
 }

@@ -370,9 +370,15 @@ void process_line( uint & last_block_tag, const char * const line )
     hope( line ) ;
     hope( *line ) ;
 
-    // Fetch the tag at line start.
-
     const char * s = line ;
+
+    // Ignore comments.
+
+    if ( *s == '#' ) {
+        return ;
+    }
+
+    // Fetch the tag at line start.
 
     uint tag = *s++ ;
     tag <<= 8 ;
@@ -535,11 +541,12 @@ void process_line( uint & last_block_tag, const char * const line )
             return ;
         }
         default: {
-            fail( "invalid line %s", line ) ;
+            warn( "invalid line %s", line ) ;
+            return ;
         }
     }
 
-    if ( *s != 0 ) {
+    if ( *s != 0 && *s != '#' ) {
         warn( "extra characters detected at end of line %s", line ) ;
     }
 }

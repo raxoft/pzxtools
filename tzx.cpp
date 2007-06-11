@@ -310,14 +310,12 @@ void tzx_render_pause( bool & level, const uint duration )
 /**
  * Output pulses from given buffer, packing them to DATA block if possible.
  */
-void tzx_render_gdb_pulses( const bool initial_level, Buffer & buffer, const uint sequence_limit, const uint tail_cycles )
+void tzx_render_gdb_pulses( const bool initial_level, Buffer & buffer, const uint sequence_limit, const uint sequence_order, const uint tail_cycles )
 {
     const word * const pulses = buffer.get_typed_data< word >() ;
     const uint pulse_count = buffer.get_data_size() / 2 ;
 
-    // FIXME: use original assignment of pulse sequences if possible.
-
-    if ( ! pzx_pack( pulses, pulse_count, initial_level, sequence_limit, 0, tail_cycles ) ) {
+    if ( ! pzx_pack( pulses, pulse_count, initial_level, sequence_limit, sequence_order, tail_cycles ) ) {
         pzx_pulses( pulses, pulse_count, initial_level, tail_cycles ) ;
     }
 
@@ -420,7 +418,7 @@ void tzx_render_gdb_pilot(
     // Now simply send all the pulses to the output stream, without any
     // extra processing.
 
-    tzx_render_gdb_pulses( initial_level, buffer, 0, 0 ) ;
+    tzx_render_gdb_pulses( initial_level, buffer, 0, 0, 0 ) ;
 }
 
 /**
@@ -439,6 +437,14 @@ void tzx_render_gdb_data(
 )
 {
     const bool initial_level = level ;
+
+    // Remember how to order the sequences depending on the first bit. Note that we use
+    // this even in case of weird symbol counts, as the first bit will usually match
+    // that of the intended sequence for given bit.
+
+    const uint first_byte = ( count > 0 ? data[ 0 ] : 0 ) ;
+    const uint first_bit = ( first_byte >> 7 ) ;
+    const uint sequence_order = ( first_bit & 1 ) ;
 
     // Output all data symbols.
 
@@ -485,7 +491,7 @@ void tzx_render_gdb_data(
 
     const uint tail_cycles = ( ( pause_length > 0 ) ? MILLISECOND_CYCLES : 0 ) ;
 
-    tzx_render_gdb_pulses( initial_level, buffer, symbol_pulses + 2, tail_cycles ) ;
+    tzx_render_gdb_pulses( initial_level, buffer, symbol_pulses + 2, sequence_order, tail_cycles ) ;
 
     // Now if there was some pause specified, output it as well.
 

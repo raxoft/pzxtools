@@ -275,7 +275,7 @@ void tzx_render_data(
 
 
 /**
- * Output pause of given duration to the output stream.
+ * Output pause of given duration (in ms) to the output stream.
  */
 void tzx_render_pause( bool & level, const uint duration )
 {
@@ -553,6 +553,52 @@ void tzx_render_gdb( bool & level, const byte * const block, const uint block_si
 }
 
 /**
+ * Send the CSW block to the output stream.
+ */
+void tzx_render_csw( bool & level, const byte * const block, const uint block_size )
+{
+    if ( block_size < 0x0E ) {
+        warn( "TZX CSW block is too small" ) ;
+        return ;
+    }
+
+    // Fetch the values.
+
+    const uint pause_length = GET2(0x04) ;
+    const uint sample_rate = GET3(0x06) ;
+    const uint compression = GET1(0x09) ;
+    const uint expected_pulse_count = GET4(0x0A) ;
+
+    const byte * const data = block + 0xE ;
+    const byte * const block_end = ( block + 4 + block_size ) ;
+
+    if ( sample_rate == 0 ) {
+        warn( "TZX CSW sample rate %u is invalid", sample_rate ) ;
+        return ;
+    }
+
+    // Render the pulses.
+
+    const uint pulse_count = csw_render_block( level, compression, sample_rate, data, block_end - data ) ;
+
+    // Check the pulse count.
+
+    if ( pulse_count != expected_pulse_count ) {
+        warn( "TZX CSW block actual pulse count %u differs from expected pulse count %u", pulse_count, expected_pulse_count ) ;
+    }
+
+    // Adjust the level to remain the same as of the last pulse, not the opposite.
+
+    if ( pulse_count > 0 ) {
+        level = ! level ;
+    }
+
+    // Output the optional pause.
+
+    tzx_render_pause( level, pause_length ) ;
+}
+
+/**
  * Get name of given info type.
  */
 const char * tzx_get_info_name( const uint type )
@@ -747,7 +793,7 @@ bool tzx_process_block(
         }
         case TZX_CSW:
         {
-            warn( "CSW block not supported yet" ) ;
+            tzx_render_csw( level, block, data_size ) ;
             break ;
         }
         case TZX_GDB:

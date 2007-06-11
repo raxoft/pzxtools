@@ -500,6 +500,9 @@ bool pzx_pack(
     const uint tail_cycles
 )
 {
+    hope( sequence_0 || pulse_count_0 == 0 ) ;
+    hope( sequence_1 || pulse_count_1 == 0 ) ;
+
     // Use the specified sequence order. If it is not specified explicitly,
     // try to guess it automatically, using the sequence with shorter
     // duration for bit 0.

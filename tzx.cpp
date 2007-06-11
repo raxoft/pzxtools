@@ -203,7 +203,7 @@ void tzx_render_data(
 
     if ( pause_length > 0 ) {
         level = false ;
-        if ( tail_cycles == 0 || pause_length > 1 ) {
+        if ( pause_length > 1 || tail_cycles == 0 || bit_count == 0 ) {
             pzx_pause( pause_length * MILLISECOND_CYCLES, level ) ;
         }
     }
@@ -310,14 +310,11 @@ void tzx_render_pause( bool & level, const uint duration )
 /**
  * Output pulses from given buffer, packing them to DATA block if possible.
  */
-void tzx_render_gdb_pulses( const bool initial_level, Buffer & buffer, const uint sequence_limit )
+void tzx_render_gdb_pulses( const bool initial_level, Buffer & buffer, const uint sequence_limit, const uint tail_cycles )
 {
     const word * const pulses = buffer.get_typed_data< word >() ;
     const uint pulse_count = buffer.get_data_size() / 2 ;
 
-    const uint tail_cycles = 0 ;
-
-    // FIXME: use tail cycles if possible.
     // FIXME: use original assignment of pulse sequences if possible.
 
     if ( ! pzx_pack( pulses, pulse_count, initial_level, sequence_limit, tail_cycles ) ) {
@@ -423,7 +420,7 @@ void tzx_render_gdb_pilot(
     // Now simply send all the pulses to the output stream, without any
     // extra processing.
 
-    tzx_render_gdb_pulses( initial_level, buffer, 0 ) ;
+    tzx_render_gdb_pulses( initial_level, buffer, 0, 0 ) ;
 }
 
 /**
@@ -478,16 +475,24 @@ void tzx_render_gdb_data(
         tzx_render_gdb_symbol( level, buffer, sequence, symbol_pulses ) ;
     }
 
-    // Now try to pack the pulses to DATA block, and if only if it fails,
+    // Now try to pack the pulses to DATA block, and only if it fails,
     // output them as they are. Hint the packer about the maximum pulse
     // sequence allowed, including the possible leading and trailing zero
-    // pulses which were added due to the forced level adjustments.
+    // pulses which were perhaps added due to the forced level adjustments.
+    //
+    // Also try to use the tail pulse when possible, as it is preferred
+    // form of finishing the final pulse.
 
-    tzx_render_gdb_pulses( initial_level, buffer, symbol_pulses + 2 ) ;
+    const uint tail_cycles = ( ( pause_length > 0 ) ? MILLISECOND_CYCLES : 0 ) ;
 
-    // Now render the pause.
+    tzx_render_gdb_pulses( initial_level, buffer, symbol_pulses + 2, tail_cycles ) ;
 
-    tzx_render_pause( level, pause_length ) ;
+    // Now if there was some pause specified, output it as well.
+
+    if ( pause_length > 0 ) {
+        level = false ;
+        pzx_pause( pause_length * MILLISECOND_CYCLES, level ) ;
+    }
 }
 
 /**

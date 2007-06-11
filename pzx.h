@@ -79,6 +79,7 @@ bool pzx_pack(
     const uint pulse_count,
     const bool initial_level,
     const uint sequence_limit,
+    const uint sequence_order,
     const uint tail_cycles
 ) ;
 

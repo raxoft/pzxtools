@@ -486,6 +486,47 @@ bool pzx_pack(
 }
 
 /**
+ * Try to pack given pulses to PZX data block using given pulse sequences.
+ */
+bool pzx_pack(
+    const word * const pulses,
+    const uint pulse_count,
+    const bool initial_level,
+    const uint pulse_count_0,
+    const uint pulse_count_1,
+    const word * const sequence_0,
+    const word * const sequence_1,
+    const uint sequence_order,
+    const uint tail_cycles
+)
+{
+    // Use the specified sequence order. If it is not specified explicitly,
+    // try to guess it automatically, using the sequence with shorter
+    // duration for bit 0.
+
+    uint order = sequence_order ;
+
+    if ( order > 1 ) {
+        uint duration_0 = 0 ;
+        for ( uint i = 0 ; i < pulse_count_0 ; i++ ) {
+            duration_0 += sequence_0[ i ] ;
+        }
+        uint duration_1 = 0 ;
+        for ( uint i = 0 ; i < pulse_count_1 ; i++ ) {
+            duration_1 += sequence_1[ i ] ;
+        }
+        order = ( ( duration_0 <= duration_1 ) ? 0 : 1 ) ;
+    }
+
+    if ( order == 0 ) {
+        return pzx_pack( pulses, pulse_count, initial_level, pulse_count_0, pulse_count_1, sequence_0, sequence_1, tail_cycles ) ;
+    }
+    else {
+        return pzx_pack( pulses, pulse_count, initial_level, pulse_count_1, pulse_count_0, sequence_1, sequence_0, tail_cycles ) ;
+    }
+}
+
+/**
  * Try to pack given pulses to PZX data block, guessing the pulse sequences automatically.
  */
 bool pzx_pack(
@@ -493,6 +534,7 @@ bool pzx_pack(
     const uint pulse_count,
     const bool initial_level,
     const uint sequence_limit,
+    const uint sequence_order,
     const uint tail_cycles
 )
 {
@@ -526,7 +568,7 @@ bool pzx_pack(
         // In the rare case the entire stream can be encoded with just one sequence, do that.
 
         if ( sequence_1 == end ) {
-            pzx_pack( pulses, pulse_count, initial_level, pulse_count_0, 0, sequence_0, NULL, tail_cycles ) ;
+            pzx_pack( pulses, pulse_count, initial_level, pulse_count_0, 0, sequence_0, NULL, sequence_order, tail_cycles ) ;
             return true ;
         }
 
@@ -536,7 +578,7 @@ bool pzx_pack(
         // so we don't have to deal with that explicitly.
 
         for ( uint pulse_count_1 = limit ; pulse_count_1 > 0 ; pulse_count_1-- ) {
-            if ( pzx_pack( pulses, pulse_count, initial_level, pulse_count_0, pulse_count_1, sequence_0, sequence_1, tail_cycles ) ) {
+            if ( pzx_pack( pulses, pulse_count, initial_level, pulse_count_0, pulse_count_1, sequence_0, sequence_1, sequence_order, tail_cycles ) ) {
                 return true ;
             }
         }

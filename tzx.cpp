@@ -483,15 +483,15 @@ void tzx_render_gdb_data(
 
     // Now try to pack the pulses to DATA block, and only if it fails,
     // output them as they are. Hint the packer about the maximum pulse
-    // sequence allowed, including the possible leading and trailing zero
-    // pulses which were perhaps added due to the forced level adjustments.
+    // sequence allowed, including the possible extra zero pulse which was
+    // perhaps added due to the forced level adjustments.
     //
     // Also try to use the tail pulse when possible, as it is preferred
     // form of finishing the final pulse.
 
     const uint tail_cycles = ( ( pause_length > 0 ) ? MILLISECOND_CYCLES : 0 ) ;
 
-    tzx_render_gdb_pulses( initial_level, buffer, symbol_pulses + 2, sequence_order, tail_cycles ) ;
+    tzx_render_gdb_pulses( initial_level, buffer, symbol_pulses + 1, sequence_order, tail_cycles ) ;
 
     // Now if there was some pause specified, output it as well.
 

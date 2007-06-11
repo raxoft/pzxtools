@@ -461,9 +461,7 @@ bool pzx_pack(
     const uint extra_bits = ( bit_count & 7 ) ;
 
     if ( extra_bits > 0 ) {
-        for ( uint i = extra_bits ; i < 8 ; i++ ) {
-            value <<= 1 ;
-        }
+        value <<= ( 8 - extra_bits ) ;
         pack_buffer.write< byte >( value ) ;
     }
 

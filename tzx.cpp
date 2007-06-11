@@ -164,6 +164,9 @@ void tzx_render_pilot(
  */
 void tzx_render_data(
     bool & level,
+    const bool initial_level,
+    const bool final_level_0,
+    const bool final_level_1,
     const byte * const data,
     const uint bit_count,
     const uint pulse_count_0,
@@ -184,17 +187,19 @@ void tzx_render_data(
         // pause is to follow. We do this always as we want the block to be
         // properly terminated regardless of the following blocks.
 
-        pzx_data( data, bit_count, level, pulse_count_0, pulse_count_1, pulse_sequence_0, pulse_sequence_1, pause_length > 0 ? tail_cycles : 0 ) ;
+        pzx_data( data, bit_count, initial_level, pulse_count_0, pulse_count_1, pulse_sequence_0, pulse_sequence_1, pause_length > 0 ? tail_cycles : 0 ) ;
 
-        // FIXME: adjust the level here, depending on the last bit output and the appropriate pulse length.
-        // FIXME: not the pulse length, as we don't know what it was originally. We need to use an explicit
-        // level if last bit is 0 and if it is 1.
-        // FIXME: and perhaps initial level as well, so we can adjust it only if there were some bits output.
+        // Adjust the current output level according to the last bit output.
+
+        const uint last_byte = data[ bit_count / 8 ] ;
+        const uint last_bit = ( last_byte >> ( bit_count & 7 ) ) ;
+        level = ( ( ( last_bit & 1 ) != 0 ) ? final_level_1 : final_level_0 ) ;
     }
 
     // Now if there was some pause specified, output it as well.
+    //
     // However don't output the pause if we have already used the tail pulse for that
-    // and the pause was short enough.
+    // and the pause was short enough. The output level is low after the pulse in either case, though.
 
     if ( pause_length > 0 ) {
         level = false ;
@@ -209,6 +214,9 @@ void tzx_render_data(
  */
 void tzx_render_data(
     bool & level,
+    const bool initial_level,
+    const bool final_level_0,
+    const bool final_level_1,
     const byte * const data,
     const uint data_size,
     const uint bits_in_last_byte,
@@ -242,7 +250,7 @@ void tzx_render_data(
 
     // Now output the block.
 
-    tzx_render_data( level, data, bit_count, 2, 2, s0, s1, tail_cycles, pause_length ) ;
+    tzx_render_data( level, initial_level, final_level_0, final_level_1, data, bit_count, 2, 2, s0, s1, tail_cycles, pause_length ) ;
 }
 
 /**
@@ -260,6 +268,9 @@ void tzx_render_data(
 )
 {
     tzx_render_data(
+        level,
+        level,
+        level,
         level,
         data,
         data_size,
@@ -786,9 +797,7 @@ bool tzx_process_block(
         case TZX_SAMPLES:
         {
             const uint duration = GET2(0x00) ;
-            level = false ;
-            tzx_render_data( level, block + 0x08, data_size, GET1(0x04), duration, 0, 0, duration, MILLISECOND_CYCLES, GET2(0x2) ) ;
-            // FIXME: level is now incorrect unless there was a pause, as it doesn't reflect the last bit output.
+            tzx_render_data( level, false, false, true, block + 0x08, data_size, GET1(0x04), duration, 0, 0, duration, MILLISECOND_CYCLES, GET2(0x2) ) ;
             break ;
         }
         case TZX_CSW:

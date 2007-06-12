@@ -105,7 +105,7 @@ int main( int argc, char * * argv )
             fail( "error reading block data" ) ;
         }
 
-        // Dump the block.
+        // Store the block to the PZX stream.
 
         const byte * const data = buffer.get_data() ;
         hope( data ) ;

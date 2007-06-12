@@ -13,7 +13,7 @@ namespace {
 FILE * output_file ;
 
 /**
- * Buffer used for holding the samples.
+ * Buffer used for holding the complete samples.
  */
 Buffer sample_buffer ;
 
@@ -26,11 +26,11 @@ uint sample_denominator ;
 //@}
 
 /**
- * Level and duration accumulated so far of pulse being currently output.
+ * Duration and value of the last sample accumulated so far, both scaled by sample_numerator.
  */
 //@{
-uint last_duration ;
-bool last_level ;
+uquad sample_duration ;
+uquad sample_value ;
 //@}
 
 }
@@ -85,40 +85,48 @@ void wav_close( void )
 }
 
 /**
- * Append pulse of given duration and given pulse level to WAV pulse block.
+ * Append pulse of given duration and given pulse level to WAV output.
  */
 void wav_out( const uint duration, const bool level )
 {
-    // Zero duration doesn't extend anything.
+    // Compute how much time has passed and how much is there left
+    // until the next sample starts.
 
-    if ( duration == 0 ) {
-        return ;
+    uquad time_passed = ( duration * sample_numerator ) ;
+    const uquad time_left = ( sample_denominator - sample_duration ) ;
+
+    // If we have finished current sample, output it now.
+
+    if ( time_passed >= time_left ) {
+
+        // Adjust the values.
+
+        time_passed -= time_left ;
+        if ( level ) {
+            sample_value += time_left ;
+        }
+
+        // Output the sample.
+
+        sample_buffer.write( u8( sample_value / sample_denominator ) ) ;
+
+        // Prepare for next sample.
+
+        sample_duration = 0 ;
+        sample_value = 0 ;
     }
 
-#if 0
+    // In case the time passed covered several more samples as well,
+    // generate them now.
 
-    // In case the level has changed, output the previously accumulated
-    // duration and prepare for the new pulse.
-
-    if ( last_level != level ) {
-        wav_pulse( last_duration ) ;
-        last_duration = 0 ;
-        last_level = level ;
+    for ( ; time_passed >= sample_denominator ; time_passed -= sample_denominator ) {
+        sample_buffer.write< u8 >( level ? 0xFF : 0x00 ) ;
     }
 
-    // Extend the current pulse.
+    // Finally, accumulate the remainer for the next sample.
 
-    last_duration += duration ;
-
-    // In case the pulse duration exceeds the limit the WAV pulse encoding
-    // can handle at maximum, use zero pulse to concatenate multiple pulses
-    // to create pulse of required duration.
-
-    if ( last_duration > limit ) {
-        wav_pulse( limit ) ;
-        wav_pulse( 0 ) ;
-        last_duration -= limit ;
+    sample_duration += time_passed ;
+    if ( level ) {
+        sample_value += time_passed ;
     }
-
-#endif
 }

@@ -68,7 +68,7 @@ void skip( const uint amount, const byte * & data, uint & data_size )
 //@}
 
 /**
- * Render bits from given byte using given pulse sequences.
+ * Render bits from given byte using given (little endian) pulse sequences.
  */
 void render_bits(
     bool & level,
@@ -76,11 +76,44 @@ void render_bits(
     uint bits,
     const uint pulse_count_0,
     const uint pulse_count_1,
-    const u16 * const sequence_0,
-    const u16 * const sequence_1
+    const byte * const sequence_0,
+    const byte * const sequence_1
 )
 {
-    // FIXME.
+    hope( sequence_0 || pulse_count_0 == 0 ) ;
+    hope( sequence_1 || pulse_count_1 == 0 ) ;
+
+    // Output all bits.
+
+    while ( bit_count-- > 0 ) {
+
+        // Choose the appropriate sequence for given bit.
+
+        const byte * sequence ;
+        uint count ;
+
+        if ( ( bits & 0x80 ) == 0 ) {
+            sequence = sequence_0 ;
+            count = pulse_count_0 ;
+        }
+        else {
+            sequence = sequence_1 ;
+            count = pulse_count_1 ;
+        }
+
+        // Use next bit next time.
+
+        bits <<= 1 ;
+
+        // Now output the appropriate amount of pulses.
+
+        while ( count-- > 0 ) {
+            uint duration = *sequence++ ;
+            duration += *sequence << 8 ;
+            wav_out( duration, level ) ;
+            level = ! level ;
+        }
+    }
 }
 
 /**
@@ -139,12 +172,12 @@ void render_block( const uint tag, const byte * data, uint data_size )
 
             bit_count &= 0x7FFFFFFF ;
 
-            // Fetch the sequences. Note that they we keep them in little endian here.
+            // Fetch the sequences. Note that we keep them little endian here.
 
-            const u16 * const sequence_0 = reinterpret_cast< const u16 * >( data ) ;
+            const byte * const sequence_0 = data ;
             SKIP( 2 * pulse_count_0 ) ;
 
-            const u16 * const sequence_1 = reinterpret_cast< const u16 * >( data ) ;
+            const byte * const sequence_1 = data ;
             SKIP( 2 * pulse_count_1 ) ;
 
             // Make sure the bit count matches the block size.

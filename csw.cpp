@@ -56,6 +56,9 @@ uint csw_render_block( bool & level, const uint sample_rate, const byte * const 
         }
 
         // Now output the pulse, converting the sample count to duration in 3.5MHz T cycles first.
+        //
+        // Note that by rounding down we lose up to almost 1 T for every
+        // pulse, but it's precise enough for our purposes.
 
         long long unsigned duration = ( ( 3500000ull * sample_count ) / sample_rate ) ;
         const uint limit = 0xFFFFFFFF ;

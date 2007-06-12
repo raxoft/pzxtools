@@ -3,17 +3,20 @@ CXXFLAGS = -g -DDEBUG -Wall
 #CXXFLAGS = -O2 -Wall
 LDLIBS = -lz
 
-PROGS=tzx2pzx tap2pzx csw2pzx pzx2txt txt2pzx
+PROGS=tzx2pzx tap2pzx csw2pzx pzx2wav pzx2txt txt2pzx
 
 all: $(PROGS)
 
 tzx2pzx: tzx2pzx.o tzx.o csw.o pzx.o
 	$(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
-tap2pzx: tap2pzx.o tzx.o csw.o pzx.o
+tap2pzx: tap2pzx.o pzx.o
 	$(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 csw2pzx: csw2pzx.o csw.o pzx.o
+	$(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+pzx2wav: pzx2wav.o pzx.o wav.o
 	$(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 pzx2txt: pzx2txt.o
@@ -43,10 +46,12 @@ csw.o : csw.cpp csw.h pzx.h
 csw2pzx.o : csw2pzx.cpp csw.h pzx.h
 pzx.o : pzx.cpp pzx.h
 pzx2txt.o : pzx2txt.cpp pzx.h
+pzx2wav.o : pzx2wav.cpp pzx.h wav.h
 tap2pzx.o : tap2pzx.cpp pzx.h tap.h
 txt2pzx.o : txt2pzx.cpp pzx.h
 tzx.o : tzx.cpp csw.h endian.h pzx.h tap.h tzx.h
 tzx2pzx.o : tzx2pzx.cpp pzx.h tzx.h
+wav.o : wav.cpp wav.h
 buffer.h : debug.h endian.h
 	$(TOUCH) $@
 csw.h : buffer.h
@@ -58,4 +63,6 @@ pzx.h : buffer.h
 tap.h : types.h
 	$(TOUCH) $@
 tzx.h : types.h
+	$(TOUCH) $@
+wav.h : types.h
 	$(TOUCH) $@

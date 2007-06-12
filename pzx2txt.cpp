@@ -213,9 +213,9 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
         }
         case PZX_DATA: {
             uint bit_count = GET4() ;
-            uint tail_cycles = GET2() ;
-            uint pulse_count_0 = GET1() ;
-            uint pulse_count_1 = GET1() ;
+            const uint tail_cycles = GET2() ;
+            const uint pulse_count_0 = GET1() ;
+            const uint pulse_count_1 = GET1() ;
 
             fprintf( output_file, "DATA %u\n", ( bit_count >> 31 ) ) ;
 

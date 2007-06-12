@@ -7,9 +7,16 @@
 
 #include <cstdio>
 
-#ifndef TYPES_H
-#include "types.h"
+#ifndef ENDIAN_H
+#include "endian.h"
 #endif
+
+// WAV chunk tags.
+
+const uint WAV_HEADER   = TAG_NAME('R','I','F','F') ;
+const uint WAV_WAVE     = TAG_NAME('W','A','V','E') ;
+const uint WAV_FORMAT   = TAG_NAME('f','m','t',' ') ;
+const uint WAV_DATA     = TAG_NAME('d','a','t','a') ;
 
 // Interface.
 

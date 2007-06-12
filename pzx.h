@@ -18,20 +18,12 @@ const byte PZX_MINOR = 3 ;
 
 // PZX block tags.
 
-#if ( __BYTE_ORDER == __LITTLE_ENDIAN )
-# define PZX_TAG(a,b,c,d)   ((d)<<24|(c)<<16|(b)<<8|(a))
-#elif ( __BYTE_ORDER == __BIG_ENDIAN )
-# define PZX_TAG(a,b,c,d)   ((a)<<24|(b)<<16|(c)<<8|(d))
-#else
-# error "Unknown __BYTE_ORDER."
-#endif
-
-const uint PZX_HEADER   = PZX_TAG('Z','X','T','P') ;
-const uint PZX_PULSES   = PZX_TAG('P','U','L','S') ;
-const uint PZX_DATA     = PZX_TAG('D','A','T','A') ;
-const uint PZX_PAUSE    = PZX_TAG('P','A','U','S') ;
-const uint PZX_STOP     = PZX_TAG('S','T','O','P') ;
-const uint PZX_BROWSE   = PZX_TAG('B','R','W','S') ;
+const uint PZX_HEADER   = TAG_NAME('Z','X','T','P') ;
+const uint PZX_PULSES   = TAG_NAME('P','U','L','S') ;
+const uint PZX_DATA     = TAG_NAME('D','A','T','A') ;
+const uint PZX_PAUSE    = TAG_NAME('P','A','U','S') ;
+const uint PZX_STOP     = TAG_NAME('S','T','O','P') ;
+const uint PZX_BROWSE   = TAG_NAME('B','R','W','S') ;
 
 // Interface.
 

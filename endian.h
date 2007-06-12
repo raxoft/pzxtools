@@ -107,6 +107,11 @@ inline Type big_endian( const Type value )
     return swapped_endian( value ) ;
 }
 
+/**
+ * Macro for preparing tag name in native order.
+ */
+#define TAG_NAME(a,b,c,d)   ((d)<<24|(c)<<16|(b)<<8|(a))
+
 #elif ( __BYTE_ORDER == __BIG_ENDIAN )
 
 /**
@@ -126,6 +131,11 @@ inline Type big_endian( const Type value )
 {
     return native_endian( value ) ;
 }
+
+/**
+ * Macro for preparing tag name in native order.
+ */
+#define TAG_NAME(a,b,c,d)   ((a)<<24|(b)<<16|(c)<<8|(d))
 
 #else
 #error "Unknown __BYTE_ORDER."

@@ -1,6 +1,6 @@
 // $Id$
 
-// CSW support.
+// Rendering of CSW files.
 
 #ifndef NO_ZLIB
 #include <zlib.h>

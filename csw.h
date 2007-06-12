@@ -1,6 +1,6 @@
 // $Id$
 
-// CSW support.
+// CSW stuff.
 
 #ifndef CSW_H
 #define CSW_H 1

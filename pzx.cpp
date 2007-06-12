@@ -90,6 +90,7 @@ void pzx_close( void )
  */
 void pzx_write( const void * const data, const uint size )
 {
+    hope( data || size == 0 ) ;
     hope( output_file ) ;
 
     // Just write everything, freaking out in case of problems.

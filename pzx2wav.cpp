@@ -109,7 +109,7 @@ void render_bits(
 
         while ( count-- > 0 ) {
             uint duration = *sequence++ ;
-            duration += *sequence << 8 ;
+            duration += *sequence++ << 8 ;
             wav_out( duration, level ) ;
             level = ! level ;
         }

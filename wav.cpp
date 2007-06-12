@@ -59,7 +59,7 @@ void wav_out( const uint duration, const bool level )
 
         // Output the sample.
 
-        sample_buffer.write( u8( sample_value / sample_denominator ) ) ;
+        sample_buffer.write( u8( 0xFF * sample_value / sample_denominator ) ) ;
 
         // Prepare for next sample.
 
@@ -90,7 +90,7 @@ void wav_flush( void )
     // Store the remaining sample.
 
     if ( sample_duration > 0 ) {
-        sample_buffer.write( u8( sample_value / sample_denominator ) ) ;
+        sample_buffer.write( u8( 0xFF * sample_value / sample_denominator ) ) ;
 
         sample_value = 0 ;
         sample_duration = 0 ;
@@ -102,6 +102,7 @@ void wav_flush( void )
  */
 void wav_write( const void * const data, const uint size )
 {
+    hope( data || size == 0 ) ;
     hope( output_file ) ;
 
     // Just write everything, freaking out in case of problems.

@@ -6,7 +6,6 @@
 // enough to rewrite to either object oriented or simple procedural languages.
 
 #include "pzx.h"
-#include "buffer.h"
 
 namespace {
 

@@ -607,18 +607,20 @@ void process_line( uint & last_block_tag, const char * const line )
         {
             check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
 
-            uint value = 0 ;
-            parse_number( value, s, "byte value", 0xFF ) ;
-            data_buffer.write< u8 >( value ) ;
+            uint value ;
+            while ( parse_number( value, s, "byte value", 0xFF, false ) ) {
+                data_buffer.write< u8 >( value ) ;
+            }
             break ;
         }
         case TAG_WORD:
         {
             check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
 
-            uint value = 0 ;
-            parse_number( value, s, "word value", 0xFFFF ) ;
-            data_buffer.write_little< u16 >( value ) ;
+            uint value ;
+            while ( parse_number( value, s, "word value", 0xFFFF, false ) ) {
+                data_buffer.write< u16 >( value ) ;
+            }
             break ;
         }
         case TAG_XOR:

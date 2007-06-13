@@ -68,7 +68,7 @@ bool option_preserve_pulses ;
 /**
  * Parse integral number.
  */
-bool parse_number( uint & number, const char * & string, const char * const what, const uint maximum = 0, const bool required = true )
+bool parse_number( uint & value, const char * & string, const char * const what, const uint maximum = 0, const bool required = true )
 {
     hope( string ) ;
     hope( what ) ;
@@ -119,10 +119,23 @@ bool parse_number( uint & number, const char * & string, const char * const what
 
     // Return the result otherwise.
 
-    number = result ;
+    value = result ;
 
     string = end + strspn( end, " \t" ) ;
 
+    return true ;
+}
+
+/**
+ * Parse boolean value.
+ */
+bool parse_bool( bool & value, const char * & string, const char * const what, const bool required = true )
+{
+    uint number ;
+    if ( ! parse_number( number, string, what, 1, required ) ) {
+        return false ;
+    }
+    value = ( number != 0 ) ;
     return true ;
 }
 
@@ -461,9 +474,7 @@ void process_line( uint & last_block_tag, const char * const line )
         {
             finish_block( last_block_tag, tag ) ;
 
-            uint level = 0 ;
-            parse_number( level, s, "initial pulse level", 1 ) ;  // FIXME: bool, conditional
-            output_level = ( level != 0 ) ;
+            parse_bool( output_level, s, "initial pulse level", false ) ;
 
             sequence_limit = 2 ;
             parse_number( sequence_limit, s, "sequence limit", 255, false ) ;
@@ -494,6 +505,8 @@ void process_line( uint & last_block_tag, const char * const line )
             parse_number( count, s, "pulse count", 0, false ) ;
 
             // In case we are packing the pulses, store them to the pulse buffer.
+            //
+            // Note that in this case the output level is adjusted after the pulses are packed.
 
             if ( last_block_tag == TAG_PACK ) {
                 if ( duration > 0xFFFF ) {
@@ -515,6 +528,7 @@ void process_line( uint & last_block_tag, const char * const line )
                     fail( "pulse duration %u is out of range to be stored as it is", duration ) ;
                 }
                 pzx_store( count, duration ) ;
+                output_level ^= ( count & 1 ) ;
                 break ;
             }
 
@@ -528,19 +542,9 @@ void process_line( uint & last_block_tag, const char * const line )
         }
         case TAG_DATA:
         {
-            const uint previous_tag = last_block_tag ;
-
             finish_block( last_block_tag, tag ) ;
 
-            uint level = 0 ;
-            parse_number( level, s, "initial pulse level", 1 ) ;  // FIXME
-
-            if ( previous_tag == TAG_PULSE && level != output_level ) { // FIXME
-                warn( "initial pulse level of data block is the same as the level of the last preceding pulse" ) ;
-            }
-
-            output_level = ( level != 0 ) ;
-
+            parse_bool( output_level, s, "initial pulse level", false ) ;
             break ;
         }
         case TAG_SIZE:
@@ -615,12 +619,11 @@ void process_line( uint & last_block_tag, const char * const line )
 
             uint duration = 1 ;
             parse_number( duration, s, "pause duration", 0x7FFFFFFF ) ;
-            uint level = 0 ;
-            parse_number( level, s, "pause level", 1, false ) ;
 
-            pzx_pause( duration, level ) ;
+            output_level = false ;
+            parse_bool( output_level, s, "pause level", false ) ;
 
-            // FIXME: output_level
+            pzx_pause( duration, output_level ) ;
             break ;
         }
         case TAG_STOP:

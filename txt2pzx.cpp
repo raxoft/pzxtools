@@ -17,7 +17,7 @@ namespace {
  */
 //@{
 
-#define TAG(a,b,c,d)   ((a)<<24|(b)<<16|(c)<<8|(d)|0x20202020)
+#define TAG(a,b,c,d)   (((a)<<24|(b)<<16|(c)<<8|(d))&~0x20202020)
 
 const uint TAG_HEADER       = TAG('P','Z','X',' ') ;
 const uint TAG_INFO         = TAG('I','N','F','O') ;
@@ -283,6 +283,24 @@ void parse_data_line( const char * const string )
 }
 
 /**
+ * Make sure that given tag appears only in valid blocks.
+ */
+void check_tag( const uint tag, const uint block_tag, const uint block_tag_1, const uint block_tag_2 = 0 )
+{
+    if ( block_tag == block_tag_1 ) {
+        return ;
+    }
+
+    if ( block_tag_2 != 0 && block_tag == block_tag_2 ) {
+        return ;
+    }
+
+    const uint tags[] = { big_endian( tag ), big_endian( block_tag ) } ;
+
+    fail( "tag %.4s is not valid in %.4s block", (char *) tags, (char *) ( tags + 1 ) ) ;
+}
+
+/**
  * Finish current block.
  */
 void finish_block( uint & tag, const uint new_tag )
@@ -391,9 +409,9 @@ void process_line( uint & last_block_tag, const char * const line )
     tag <<= 8 ;
     tag |= *s ;
 
-    // Make it lowercase, and convert end of line to space as well.
+    // Make it uppercase, and convert space to zero as well.
 
-    tag |= 0x20202020 ;
+    tag &= ~0x20202020 ;
 
     // Find the first argument.
 
@@ -405,14 +423,24 @@ void process_line( uint & last_block_tag, const char * const line )
     // Note that we don't really care what the rest of the tag is.
 
     switch ( tag ) {
-        case TAG_HEADER: {
+        case TAG_HEADER:
+        {
             finish_block( last_block_tag, tag ) ;
             return ;
         }
         case TAG_INFO:
         {
+            check_tag( tag, last_block_tag, TAG_HEADER ) ;
+
             pzx_info( parse_string( s ) ) ;
             return ;
+        }
+        case TAG_PACK:
+        {
+            finish_block( last_block_tag, tag ) ;
+
+            output_level = false ;
+            break ;
         }
         case TAG_PULSE:
         {
@@ -426,6 +454,8 @@ void process_line( uint & last_block_tag, const char * const line )
                 output_level = false ;
                 break ;
             }
+
+            check_tag( tag, last_block_tag, TAG_PULSE, TAG_PACK ) ;
 
             // Fetch the optional count, too.
 
@@ -472,16 +502,22 @@ void process_line( uint & last_block_tag, const char * const line )
         }
         case TAG_SIZE:
         {
+            check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
+
             parse_number( expected_data_size, s, 0, "byte size" ) ;
             break ;
         }
         case TAG_BITS:
         {
+            check_tag( tag, last_block_tag, TAG_DATA ) ;
+
             parse_number( extra_bit_count, s, 8, "extra bit count" ) ;
             break ;
         }
         case TAG_BIT0:
         {
+            check_tag( tag, last_block_tag, TAG_DATA, TAG_PACK ) ;
+
             uint duration ;
             while ( parse_number( duration, s, 0xFFFF ) ) {
                 bit_0_buffer.write< word >( duration ) ;
@@ -490,6 +526,8 @@ void process_line( uint & last_block_tag, const char * const line )
         }
         case TAG_BIT1:
         {
+            check_tag( tag, last_block_tag, TAG_DATA, TAG_PACK ) ;
+
             uint duration ;
             while ( parse_number( duration, s, 0xFFFF ) ) {
                 bit_1_buffer.write< word >( duration ) ;
@@ -498,16 +536,22 @@ void process_line( uint & last_block_tag, const char * const line )
         }
         case TAG_TAIL:
         {
+            check_tag( tag, last_block_tag, TAG_DATA, TAG_PACK ) ;
+
             parse_number( tail_cycles, s, 0xFFFF, "tail pulse duration" ) ;
             break ;
         }
         case TAG_BODY:
         {
+            check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
+
             parse_data_line( s ) ;
             return ;
         }
         case TAG_BYTE:
         {
+            check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
+
             uint value = 0 ;
             parse_number( value, s, 0xFF, "byte value" ) ;
             data_buffer.write< u8 >( value ) ;
@@ -515,6 +559,8 @@ void process_line( uint & last_block_tag, const char * const line )
         }
         case TAG_WORD:
         {
+            check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
+
             uint value = 0 ;
             parse_number( value, s, 0xFFFF, "byte value" ) ;
             data_buffer.write_little< u16 >( value ) ;
@@ -545,12 +591,14 @@ void process_line( uint & last_block_tag, const char * const line )
         case TAG_BROWSE:
         {
             finish_block( last_block_tag, tag ) ;
+
             pzx_browse( parse_string( s ) ) ;
             return ;
         }
         case TAG_TAG:
         {
             finish_block( last_block_tag, tag ) ;
+
             if ( strcspn( s, " \t" ) != 4 ) {
                 fail( "invalid tag name %s", s ) ;
             }

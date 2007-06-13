@@ -22,6 +22,7 @@ namespace {
 const uint TAG_HEADER       = TAG('P','Z','X',' ') ;
 const uint TAG_INFO         = TAG('I','N','F','O') ;
 const uint TAG_PULSE        = TAG('P','U','L','S') ;
+const uint TAG_PACK         = TAG('P','A','C','K') ;
 const uint TAG_DATA         = TAG('D','A','T','A') ;
 const uint TAG_SIZE         = TAG('S','I','Z','E') ;
 const uint TAG_BITS         = TAG('B','I','T','S') ;
@@ -29,6 +30,8 @@ const uint TAG_BIT0         = TAG('B','I','T','0') ;
 const uint TAG_BIT1         = TAG('B','I','T','1') ;
 const uint TAG_TAIL         = TAG('T','A','I','L') ;
 const uint TAG_BODY         = TAG('B','O','D','Y') ;
+const uint TAG_BYTE         = TAG('B','Y','T','E') ;
+const uint TAG_WORD         = TAG('W','O','R','D') ;
 const uint TAG_PAUSE        = TAG('P','A','U','S') ;
 const uint TAG_STOP         = TAG('S','T','O','P') ;
 const uint TAG_BROWSE       = TAG('B','R','O','W') ;
@@ -502,6 +505,20 @@ void process_line( uint & last_block_tag, const char * const line )
         {
             parse_data_line( s ) ;
             return ;
+        }
+        case TAG_BYTE:
+        {
+            uint value = 0 ;
+            parse_number( value, s, 0xFF, "byte value" ) ;
+            data_buffer.write< u8 >( value ) ;
+            break ;
+        }
+        case TAG_WORD:
+        {
+            uint value = 0 ;
+            parse_number( value, s, 0xFFFF, "byte value" ) ;
+            data_buffer.write_little< u16 >( value ) ;
+            break ;
         }
         case TAG_PAUSE:
         {

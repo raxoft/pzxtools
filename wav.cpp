@@ -59,7 +59,7 @@ void wav_out( const uint duration, const bool level )
 
         // Output the sample.
 
-        sample_buffer.write( u8( 0xFF * sample_value / sample_denominator ) ) ;
+        sample_buffer.write< u8 >( 255u * sample_value / sample_denominator ) ;
 
         // Prepare for next sample.
 
@@ -71,7 +71,7 @@ void wav_out( const uint duration, const bool level )
     // generate them now.
 
     for ( ; time_passed >= sample_denominator ; time_passed -= sample_denominator ) {
-        sample_buffer.write< u8 >( level ? 0xFF : 0x00 ) ;
+        sample_buffer.write< u8 >( level ? 255 : 0 ) ;
     }
 
     // Finally, accumulate the remainer for the next sample.
@@ -90,7 +90,7 @@ void wav_flush( void )
     // Store the remaining sample.
 
     if ( sample_duration > 0 ) {
-        sample_buffer.write( u8( 0xFF * sample_value / sample_denominator ) ) ;
+        sample_buffer.write< u8 >( 255u * sample_value / sample_denominator ) ;
 
         sample_value = 0 ;
         sample_duration = 0 ;

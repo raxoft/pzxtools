@@ -1,3 +1,6 @@
+# $Id$
+#
+# Simple makefile for the PZX tools suite.
 
 CXXFLAGS = -g -DDEBUG -Wall
 #CXXFLAGS = -O2 -Wall

@@ -47,7 +47,7 @@ const uint TAG_TAG          = TAG('T','A','G',' ') ;
 Buffer data_buffer ;
 Buffer bit_0_buffer ;
 Buffer bit_1_buffer ;
-Buffer pack_buffer ;
+Buffer pulse_buffer ;
 uint sequence_limit ;
 uint sequence_order ;
 uint tail_cycles ;
@@ -68,9 +68,10 @@ bool option_preserve_pulses ;
 /**
  * Parse integral number.
  */
-bool parse_number( uint & number, const char * & string, const uint maximum = 0, const char * const what = NULL )
+bool parse_number( uint & number, const char * & string, const char * const what, const uint maximum = 0, const bool required = true )
 {
     hope( string ) ;
+    hope( what ) ;
 
     // Choose base ourselves, as we don't want the octal behavior.
 
@@ -105,14 +106,14 @@ bool parse_number( uint & number, const char * & string, const uint maximum = 0,
     // Deal with errors.
 
     if ( ( string == end ) || ( errno == ERANGE ) ) {
-        if ( what ) {
+        if ( required ) {
             warn( "invalid %s encountered in string %s", what, string ) ;
         }
         return false ;
     }
 
     if ( maximum > 0 && result > maximum ) {
-        warn( "%s %lu out of range in string %s", ( what ? what : "value" ), result, string ) ;
+        warn( "%s %lu out of range in string %s", what, result, string ) ;
         return false ;
     }
 
@@ -319,18 +320,18 @@ void finish_block( uint & tag, const uint new_tag )
     switch ( tag ) {
         case TAG_PACK:
         {
-            const word * const pulses = pack_buffer.get_typed_data< word >() ;
-            const uint pulse_count = pack_buffer.get_data_size() / 2 ;
+            const word * const pulses = pulse_buffer.get_typed_data< word >() ;
+            const uint pulse_count = pulse_buffer.get_data_size() / 2 ;
 
             if ( ! pzx_pack( pulses, pulse_count, output_level, sequence_limit, sequence_order, tail_cycles ) ) {
                 warn( "packing the pulses is not possible" ) ;
                 pzx_pulses( pulses, pulse_count, output_level, tail_cycles ) ;
             }
 
-            pack_buffer.clear() ;
+            pulse_buffer.clear() ;
 
             tail_cycles = 0 ;
-            output_level = false ;
+            output_level ^= ( pulse_count & 1 ) ;
 
             break ;
 
@@ -461,14 +462,14 @@ void process_line( uint & last_block_tag, const char * const line )
             finish_block( last_block_tag, tag ) ;
 
             uint level = 0 ;
-            parse_number( level, s, 1, "initial pulse level" ) ;
+            parse_number( level, s, "initial pulse level", 1 ) ;  // FIXME: bool, conditional
             output_level = ( level != 0 ) ;
 
             sequence_limit = 2 ;
-            parse_number( sequence_limit, s, 255 ) ;
+            parse_number( sequence_limit, s, "sequence limit", 255, false ) ;
 
             sequence_order = 2 ;
-            parse_number( sequence_order, s, 2 ) ;
+            parse_number( sequence_order, s, "sequence order", 2, false ) ;
 
             break ;
         }
@@ -477,7 +478,7 @@ void process_line( uint & last_block_tag, const char * const line )
             // Fetch the duration, or start new sequence if necessary.
 
             uint duration ;
-            if ( ! parse_number( duration, s ) ) {
+            if ( ! parse_number( duration, s, "pulse duration", 0, false ) ) {
                 if ( option_preserve_pulses || last_block_tag != tag ) {
                     finish_block( last_block_tag, tag ) ;
                 }
@@ -490,7 +491,7 @@ void process_line( uint & last_block_tag, const char * const line )
             // Fetch the optional count, too.
 
             uint count = 1 ;
-            parse_number( count, s ) ;
+            parse_number( count, s, "pulse count", 0, false ) ;
 
             // In case we are packing the pulses, store them to the pulse buffer.
 
@@ -499,7 +500,7 @@ void process_line( uint & last_block_tag, const char * const line )
                     fail( "pulse duration %u is out of range to be packed", duration ) ;
                 }
                 while ( count-- > 0 ) {
-                    pack_buffer.write< word >( duration ) ;
+                    pulse_buffer.write< word >( duration ) ;
                 }
                 break ;
             }
@@ -532,9 +533,9 @@ void process_line( uint & last_block_tag, const char * const line )
             finish_block( last_block_tag, tag ) ;
 
             uint level = 0 ;
-            parse_number( level, s, 1, "initial pulse level" ) ;
+            parse_number( level, s, "initial pulse level", 1 ) ;  // FIXME
 
-            if ( previous_tag == TAG_PULSE && level != output_level ) {
+            if ( previous_tag == TAG_PULSE && level != output_level ) { // FIXME
                 warn( "initial pulse level of data block is the same as the level of the last preceding pulse" ) ;
             }
 
@@ -546,14 +547,14 @@ void process_line( uint & last_block_tag, const char * const line )
         {
             check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
 
-            parse_number( expected_data_size, s, 0, "byte size" ) ;
+            parse_number( expected_data_size, s, "data size" ) ;
             break ;
         }
         case TAG_BITS:
         {
             check_tag( tag, last_block_tag, TAG_DATA ) ;
 
-            parse_number( extra_bit_count, s, 8, "extra bit count" ) ;
+            parse_number( extra_bit_count, s, "extra bit count", 8 ) ;
             break ;
         }
         case TAG_BIT0:
@@ -561,7 +562,7 @@ void process_line( uint & last_block_tag, const char * const line )
             check_tag( tag, last_block_tag, TAG_DATA ) ;
 
             uint duration ;
-            while ( parse_number( duration, s, 0xFFFF ) ) {
+            while ( parse_number( duration, s, "pulse duration", 0xFFFF, false ) ) {
                 bit_0_buffer.write< word >( duration ) ;
             }
             break ;
@@ -571,7 +572,7 @@ void process_line( uint & last_block_tag, const char * const line )
             check_tag( tag, last_block_tag, TAG_DATA ) ;
 
             uint duration ;
-            while ( parse_number( duration, s, 0xFFFF ) ) {
+            while ( parse_number( duration, s, "pulse duration", 0xFFFF, false ) ) {
                 bit_1_buffer.write< word >( duration ) ;
             }
             break ;
@@ -580,7 +581,7 @@ void process_line( uint & last_block_tag, const char * const line )
         {
             check_tag( tag, last_block_tag, TAG_DATA, TAG_PACK ) ;
 
-            parse_number( tail_cycles, s, 0xFFFF, "tail pulse duration" ) ;
+            parse_number( tail_cycles, s, "tail pulse duration", 0xFFFF ) ;
             break ;
         }
         case TAG_BODY:
@@ -595,7 +596,7 @@ void process_line( uint & last_block_tag, const char * const line )
             check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
 
             uint value = 0 ;
-            parse_number( value, s, 0xFF, "byte value" ) ;
+            parse_number( value, s, "byte value", 0xFF ) ;
             data_buffer.write< u8 >( value ) ;
             break ;
         }
@@ -604,7 +605,7 @@ void process_line( uint & last_block_tag, const char * const line )
             check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
 
             uint value = 0 ;
-            parse_number( value, s, 0xFFFF, "byte value" ) ;
+            parse_number( value, s, "word value", 0xFFFF ) ;
             data_buffer.write_little< u16 >( value ) ;
             break ;
         }
@@ -613,11 +614,13 @@ void process_line( uint & last_block_tag, const char * const line )
             finish_block( last_block_tag, tag ) ;
 
             uint duration = 1 ;
-            parse_number( duration, s, 0x7FFFFFFF, "pause duration" ) ;
+            parse_number( duration, s, "pause duration", 0x7FFFFFFF ) ;
             uint level = 0 ;
-            parse_number( level, s, 1, "pause level" ) ;
+            parse_number( level, s, "pause level", 1, false ) ;
 
             pzx_pause( duration, level ) ;
+
+            // FIXME: output_level
             break ;
         }
         case TAG_STOP:
@@ -625,7 +628,7 @@ void process_line( uint & last_block_tag, const char * const line )
             finish_block( last_block_tag, tag ) ;
 
             uint flags = 0 ;
-            parse_number( flags, s, 0xFFFF, "stop flags" ) ;
+            parse_number( flags, s, "stop flags", 0xFFFF ) ;
 
             pzx_stop( flags ) ;
             break ;

@@ -1,6 +1,12 @@
 // $Id$
 
-// Byte order conversions.
+/**
+ * @file Byte order conversions.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #ifndef ENDIAN_H
 #define ENDIAN_H

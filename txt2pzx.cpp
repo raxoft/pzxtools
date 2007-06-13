@@ -1,6 +1,12 @@
 // $Id$
 
-// TXT->PZX convertor.
+/**
+ * @file TXT->PZX convertor.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #include "pzx.h"
 

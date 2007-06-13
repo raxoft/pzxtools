@@ -1,6 +1,12 @@
 // $Id$
 
-// Rendering of TZX files.
+/**
+ * @file Rendering of TZX files.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #include "tzx.h"
 #include "tap.h"

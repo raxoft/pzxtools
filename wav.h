@@ -1,6 +1,12 @@
 // $Id$
 
-// WAV stuff.
+/**
+ * @file WAV stuff.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #ifndef WAV_H
 #define WAV_H 1

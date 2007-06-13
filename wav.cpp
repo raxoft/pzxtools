@@ -1,6 +1,12 @@
 // $Id$
 
-// Rendering to WAV files.
+/**
+ * @file Rendering to WAV files.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #include "wav.h"
 #include "buffer.h"

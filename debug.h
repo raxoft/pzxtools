@@ -1,6 +1,12 @@
 // $Id$
 
-// Debug support.
+/**
+ * @file Debug support.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #ifndef DEBUG_H
 #define DEBUG_H 1

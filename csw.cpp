@@ -1,6 +1,12 @@
 // $Id$
 
-// Rendering of CSW files.
+/**
+ * @file Rendering of CSW files.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #ifndef NO_ZLIB
 #include <zlib.h>

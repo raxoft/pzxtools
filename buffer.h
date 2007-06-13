@@ -1,6 +1,12 @@
 // $Id$
 
-// Self-inflating buffer.
+/**
+ * @file Self-inflating buffer.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #ifndef BUFFER_H
 #define BUFFER_H 1

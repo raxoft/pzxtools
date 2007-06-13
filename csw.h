@@ -1,6 +1,12 @@
 // $Id$
 
-// CSW stuff.
+/**
+ * @file CSW stuff.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #ifndef CSW_H
 #define CSW_H 1

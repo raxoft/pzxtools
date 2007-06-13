@@ -1,6 +1,12 @@
 // $Id$
 
-// TAP constants.
+/**
+ * @file TAP constants.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #ifndef TAP_H
 #define TAP_H 1

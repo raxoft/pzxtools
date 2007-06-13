@@ -1,9 +1,15 @@
 // $Id$
 
-// Saving to PZX files.
-//
-// Reference implementation written in C-like style, so it should be simple
-// enough to rewrite to either object oriented or simple procedural languages.
+/**
+ * @file Saving to PZX files.
+ *
+ * Reference implementation written in C-like style, so it should be simple
+ * enough to rewrite to either object oriented or simple procedural languages.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #include "pzx.h"
 

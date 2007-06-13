@@ -1,6 +1,12 @@
 // $Id$
 
-// Custom types.
+/**
+ * @file Custom types.
+ *
+ * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+ *
+ * This source code is released under the MIT license, see included LICENSE.TXT.
+ */
 
 #ifndef TYPES_H
 #define TYPES_H 1

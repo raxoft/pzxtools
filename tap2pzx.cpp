@@ -6,6 +6,18 @@
 #include "tap.h"
 
 /**
+ * Global options.
+ */
+namespace {
+
+/**
+ * Duration of pauses inserted between tap blocks.
+ */
+uint option_pause_duration ;
+
+} ;
+
+/**
  * Convert given TAP file to PZX file.
  */
 extern "C"
@@ -37,6 +49,14 @@ int main( int argc, char * * argv )
                     fail( "multiple output file names specified" ) ;
                 }
                 output_name = argv[ ++i ] ;
+                break ;
+            }
+            case 's': {
+                const uint value = uint( atoi( argv[ ++i ] ) ) ;
+                if ( value > 10 * 60 * 1000 ) {
+                    fail( "pause duration %ums is out of range", value ) ;
+                }
+                option_pause_duration = value * MILLISECOND_CYCLES ;
                 break ;
             }
             default: {
@@ -121,9 +141,11 @@ int main( int argc, char * * argv )
 
         pzx_data( data, 8 * size, true, 2, 2, sequence_0, sequence_1, TAIL_CYCLES ) ;
 
-        // Separate the blocks with minimum pause.
+        // Separate the blocks with specified pause if necessary.
 
-        pzx_pause( 2 * MILLISECOND_CYCLES, false ) ;
+        if ( option_pause_duration > 0 ) {
+            pzx_pause( option_pause_duration, false ) ;
+        }
     }
 
     // Close the input file.

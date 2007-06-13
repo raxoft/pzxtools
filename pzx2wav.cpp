@@ -117,6 +117,87 @@ void render_bits(
 }
 
 /**
+ * Render given DATA block to WAV output file.
+ */
+void render_data_block( const byte * data, uint data_size )
+{
+    // Fetch the numbers.
+
+    uint bit_count = GET4() ;
+    const uint tail_cycles = GET2() ;
+    const uint pulse_count_0 = GET1() ;
+    const uint pulse_count_1 = GET1() ;
+
+    // Extract initial pulse level.
+
+    bool level = ( ( bit_count >> 31 ) != 0 ) ;
+
+    bit_count &= 0x7FFFFFFF ;
+
+    // Fetch the sequences. Note that we keep them little endian here.
+
+    const byte * const sequence_0 = data ;
+    SKIP( 2 * pulse_count_0 ) ;
+
+    const byte * const sequence_1 = data ;
+    SKIP( 2 * pulse_count_1 ) ;
+
+    // Make sure the bit count matches the block size.
+
+    if ( data_size != ( ( bit_count + 7 ) / 8 ) ) {
+        fail( "bit count %u does not match the actual data size %u", bit_count, data_size ) ;
+    }
+
+    // Now output all the bits.
+
+    while ( bit_count > 8 ) {
+        render_bits( level, 8, *data++, pulse_count_0, pulse_count_1, sequence_0, sequence_1 ) ;
+        bit_count -= 8 ;
+    }
+    render_bits( level, bit_count, *data, pulse_count_0, pulse_count_1, sequence_0, sequence_1 ) ;
+
+    // And finally output the optional tail pulse.
+
+    wav_out( tail_cycles, level ) ;
+}
+
+/**
+ * Render given PULSE block to WAV output file.
+ */
+void render_pulse_block( const byte * data, uint data_size )
+{
+    // Prepare initial level.
+
+    bool level = false ;
+
+    // Render all pulses in the block.
+
+    while ( data_size > 0 ) {
+
+        // Fetch the pulse repeat count and duration.
+
+        uint count = 1 ;
+        uint duration = GET2() ;
+        if ( duration > 0x8000 ) {
+            count = duration & 0x7FFF ;
+            duration = GET2() ;
+        }
+        if ( duration >= 0x8000 ) {
+            duration &= 0x7FFF ;
+            duration <<= 16 ;
+            duration |= GET2() ;
+        }
+
+        // Output the appropriate number of pulses.
+
+        while ( count-- > 0 ) {
+            wav_out( duration, level ) ;
+            level = ! level ;
+        }
+    }
+}
+
+/**
  * Render given PZX block to WAV output file.
  */
 void render_block( const uint tag, const byte * data, uint data_size )
@@ -125,95 +206,16 @@ void render_block( const uint tag, const byte * data, uint data_size )
 
     switch ( tag ) {
         case PZX_PULSES: {
-
-            // Prepare initial level.
-
-            bool level = false ;
-
-            // Render all pulses in the block.
-
-            while ( data_size > 0 ) {
-
-                // Fetch the pulse repeat count and duration.
-
-                uint count = 1 ;
-                uint duration = GET2() ;
-                if ( duration > 0x8000 ) {
-                    count = duration & 0x7FFF ;
-                    duration = GET2() ;
-                }
-                if ( duration >= 0x8000 ) {
-                    duration &= 0x7FFF ;
-                    duration <<= 16 ;
-                    duration |= GET2() ;
-                }
-
-                // Output the appropriate number of pulses.
-
-                while ( count-- > 0 ) {
-                    wav_out( duration, level ) ;
-                    level = ! level ;
-                }
-            }
+            render_pulse_block( data, data_size ) ;
             break ;
         }
         case PZX_DATA: {
-
-            // Fetch the numbers.
-
-            uint bit_count = GET4() ;
-            const uint tail_cycles = GET2() ;
-            const uint pulse_count_0 = GET1() ;
-            const uint pulse_count_1 = GET1() ;
-
-            // Extract initial pulse level.
-
-            bool level = ( ( bit_count >> 31 ) != 0 ) ;
-
-            bit_count &= 0x7FFFFFFF ;
-
-            // Fetch the sequences. Note that we keep them little endian here.
-
-            const byte * const sequence_0 = data ;
-            SKIP( 2 * pulse_count_0 ) ;
-
-            const byte * const sequence_1 = data ;
-            SKIP( 2 * pulse_count_1 ) ;
-
-            // Make sure the bit count matches the block size.
-
-            if ( data_size != ( ( bit_count + 7 ) / 8 ) ) {
-                fail( "bit count %u does not match the actual data size %u", bit_count, data_size ) ;
-            }
-
-            // Now output all the bits.
-
-            while ( bit_count > 8 ) {
-                render_bits( level, 8, *data++, pulse_count_0, pulse_count_1, sequence_0, sequence_1 ) ;
-                bit_count -= 8 ;
-            }
-            render_bits( level, bit_count, *data, pulse_count_0, pulse_count_1, sequence_0, sequence_1 ) ;
-
-            // And finally output the optional tail pulse.
-
-            wav_out( tail_cycles, level ) ;
-
+            render_data_block( data, data_size ) ;
             break ;
         }
         case PZX_PAUSE: {
-
-            // Fetch the pause duration and level.
-
-            uint duration = GET4() ;
-
-            const bool level = ( ( duration >> 31 ) != 0 ) ;
-
-            duration &= 0x7FFFFFFF ;
-
-            // Now output the corresponding pulse.
-
-            wav_out( duration, level ) ;
-
+            const uint duration = GET4() ;
+            wav_out( ( duration & 0x7FFFFFFF ), ( duration >> 31 ) ) ;
             break ;
         }
     }

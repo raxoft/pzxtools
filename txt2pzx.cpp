@@ -32,6 +32,9 @@ const uint TAG_TAIL         = TAG('T','A','I','L') ;
 const uint TAG_BODY         = TAG('B','O','D','Y') ;
 const uint TAG_BYTE         = TAG('B','Y','T','E') ;
 const uint TAG_WORD         = TAG('W','O','R','D') ;
+const uint TAG_XOR          = TAG('X','O','R',' ') ;
+const uint TAG_ADD          = TAG('A','D','D',' ') ;
+const uint TAG_SUB          = TAG('S','U','B',' ') ;
 const uint TAG_PAUSE        = TAG('P','A','U','S') ;
 const uint TAG_STOP         = TAG('S','T','O','P') ;
 const uint TAG_BROWSE       = TAG('B','R','O','W') ;
@@ -613,6 +616,57 @@ void process_line( uint & last_block_tag, const char * const line )
             data_buffer.write_little< u16 >( value ) ;
             break ;
         }
+        case TAG_XOR:
+        {
+            check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
+
+            uint value = 0 ;
+            parse_number( value, s, "initial accumulator value", 0xFF, false ) ;
+
+            const byte * p = data_buffer.get_data() ;
+            uint count = data_buffer.get_data_size() ;
+
+            while ( count-- > 0 ) {
+                value ^= *p++ ;
+            }
+
+            data_buffer.write< u8 >( value ) ;
+            break ;
+        }
+        case TAG_ADD:
+        {
+            check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
+
+            uint value = 0 ;
+            parse_number( value, s, "initial accumulator value", 0xFF, false ) ;
+
+            const byte * p = data_buffer.get_data() ;
+            uint count = data_buffer.get_data_size() ;
+
+            while ( count-- > 0 ) {
+                value += *p++ ;
+            }
+
+            data_buffer.write< u8 >( value ) ;
+            break ;
+        }
+        case TAG_SUB:
+        {
+            check_tag( tag, last_block_tag, TAG_DATA, TAG_TAG ) ;
+
+            uint value = 0 ;
+            parse_number( value, s, "initial accumulator value", 0xFF, false ) ;
+
+            const byte * p = data_buffer.get_data() ;
+            uint count = data_buffer.get_data_size() ;
+
+            while ( count-- > 0 ) {
+                value -= *p++ ;
+            }
+
+            data_buffer.write< u8 >( value ) ;
+            break ;
+        }
         case TAG_PAUSE:
         {
             finish_block( last_block_tag, tag ) ;
@@ -648,7 +702,7 @@ void process_line( uint & last_block_tag, const char * const line )
             finish_block( last_block_tag, tag ) ;
 
             if ( strcspn( s, " \t" ) != 4 ) {
-                fail( "invalid tag name %s", s ) ;
+                fail( "invalid PZX tag name %s", s ) ;
             }
             unknown_tag = TAG_NAME( s[0], s[1], s[2], s[3] ) ;
             return ;

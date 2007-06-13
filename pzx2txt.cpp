@@ -10,6 +10,11 @@
 namespace {
 
 /**
+ * Flag set when data should be dumped as pulses.
+ */
+bool option_dump_pulses ;
+
+/**
  * Flag set when data should be dumped as ASCII characters when possible.
  */
 bool option_dump_ascii ;
@@ -52,12 +57,28 @@ Type fetch( const byte * & data, uint & data_size )
 }
 
 /**
+ * Skip given amount of bytes in given data block.
+ */
+void skip( const uint amount, const byte * & data, uint & data_size )
+{
+    hope( data ) ;
+
+    if ( amount > data_size ) {
+        fail( "incomplete block detected" ) ;
+    }
+
+    data += amount ;
+    data_size -= amount ;
+}
+
+/**
  * Macros for convenient fetching of values from current block.
  */
 //@{
 #define GET1()  fetch< u8 >( data, data_size )
 #define GET2()  fetch< u16 >( data, data_size )
 #define GET4()  fetch< u32 >( data, data_size )
+#define SKIP(n) skip( n, data, data_size )
 //@}
 
 /**
@@ -65,6 +86,9 @@ Type fetch( const byte * & data, uint & data_size )
  */
 void dump_string( FILE * const output_file, const char * const prefix, const byte * const data, const uint data_size )
 {
+    hope( prefix ) ;
+    hope( data ) ;
+
     fprintf( output_file, "%s \"", prefix ) ;
 
     for ( uint i = 0 ; i < data_size ; i++ ) {
@@ -117,6 +141,8 @@ void dump_string( FILE * const output_file, const char * const prefix, const byt
  */
 void dump_strings( FILE * const output_file, const char * const prefix, const byte * data, uint data_size )
 {
+    hope( data ) ;
+
     const byte * const end = data + data_size ;
     while ( data < end ) {
         const byte * const string = data ;
@@ -133,6 +159,8 @@ void dump_strings( FILE * const output_file, const char * const prefix, const by
  */
 void dump_data_line( FILE * const output_file, const byte * const data, const uint data_size, const bool dump_ascii = false )
 {
+    hope( data ) ;
+
     if ( data_size == 0 ) {
         return ;
     }
@@ -157,6 +185,8 @@ void dump_data_line( FILE * const output_file, const byte * const data, const ui
  */
 void dump_data( FILE * const output_file, const byte * data, uint data_size, const bool dump_ascii = false )
 {
+    hope( data ) ;
+
     if ( option_skip_data ) {
         return ;
     }
@@ -219,20 +249,89 @@ void dump_bits(
 }
 
 /**
+ * Dump given bit sequence to given output file.
+ */
+void dump_bit_sequence( FILE * const output_file, const uint index, const byte * sequence, uint count )
+{
+    hope( sequence ) ;
+
+    fprintf( output_file, "BIT%u", index ) ;
+
+    while ( count-- > 0 ) {
+        uint duration = *sequence++ ;
+        duration += *sequence++ << 8 ;
+        fprintf( output_file, " %u", duration ) ;
+    }
+
+    fprintf( output_file, "\n" ) ;
+}
+
+/**
  * Dump the DATA block to given file.
  */
 void dump_data_block( FILE * const output_file, const byte * data, uint data_size )
 {
     hope( data ) ;
 
+    // Fetch the numbers.
+
     uint bit_count = GET4() ;
     const uint tail_cycles = GET2() ;
     const uint pulse_count_0 = GET1() ;
     const uint pulse_count_1 = GET1() ;
 
-    fprintf( output_file, "DATA %u\n", ( bit_count >> 31 ) ) ;
+    // Extract initial pulse level.
+
+    const bool level = ( ( bit_count >> 31 ) != 0 ) ;
 
     bit_count &= 0x7FFFFFFF ;
+
+    // Fetch the sequences. Note that we keep them little endian here.
+
+    const byte * const sequence_0 = data ;
+    SKIP( 2 * pulse_count_0 ) ;
+
+    const byte * const sequence_1 = data ;
+    SKIP( 2 * pulse_count_1 ) ;
+
+    // Make sure the bit count matches the block size.
+
+    if ( data_size != ( ( bit_count + 7 ) / 8 ) ) {
+        fail( "bit count %u does not match the actual data size %u", bit_count, data_size ) ;
+    }
+
+    // Dump everything as pulses if requested.
+
+    if ( option_dump_pulses ) {
+
+        fprintf( output_file, "PULSES\n" ) ;
+
+        // Make sure the level is high if necessary.
+
+        if ( level ) {
+            fprintf( output_file, "PULSE 0\n" ) ;
+        }
+
+        // Dump all the bits.
+
+        while ( bit_count > 8 ) {
+            dump_bits( output_file, 8, *data++, pulse_count_0, pulse_count_1, sequence_0, sequence_1 ) ;
+            bit_count -= 8 ;
+        }
+        dump_bits( output_file, bit_count, *data, pulse_count_0, pulse_count_1, sequence_0, sequence_1 ) ;
+
+        // Include the tail pulse if necessary.
+
+        if ( tail_cycles > 0 ) {
+            fprintf( output_file, "PULSE %u\n", tail_cycles ) ;
+        }
+
+        return ;
+    }
+
+    // Otherwise print the data normally, staring with all the header info.
+
+    fprintf( output_file, "DATA %u\n", level ) ;
 
     fprintf( output_file, "SIZE %u\n", ( bit_count / 8 ) ) ;
     if ( ( bit_count & 7 ) != 0 ) {
@@ -241,23 +340,12 @@ void dump_data_block( FILE * const output_file, const byte * data, uint data_siz
 
     fprintf( output_file, "TAIL %u\n", tail_cycles ) ;
 
-    fprintf( output_file, "BIT0" ) ;
-    for ( uint i = 0 ; i < pulse_count_0 ; i++ ) {
-        const uint duration = GET2() ;
-        fprintf( output_file, " %u", duration ) ;
-    }
-    fprintf( output_file, "\n" ) ;
+    // Now dump the bit sequences used.
 
-    fprintf( output_file, "BIT1" ) ;
-    for ( uint i = 0 ; i < pulse_count_1 ; i++ ) {
-        const uint duration = GET2() ;
-        fprintf( output_file, " %u", duration ) ;
-    }
-    fprintf( output_file, "\n" ) ;
+    dump_bit_sequence( output_file, 0, sequence_0, pulse_count_0 ) ;
+    dump_bit_sequence( output_file, 1, sequence_1, pulse_count_1 ) ;
 
-    if ( data_size != ( ( bit_count + 7 ) / 8 ) ) {
-        warn( "bit count %u does not match the actual data size %u", bit_count, data_size ) ;
-    }
+    // If header dumping is enabled, dump whatever looks like a header in a more readable form.
 
     if ( option_dump_headers && data_size == 19 ) {
 
@@ -278,6 +366,8 @@ void dump_data_block( FILE * const output_file, const byte * data, uint data_siz
         return ;
     }
 
+    // Otherwise dump the data as they are.
+
     dump_data( output_file, data, data_size, option_dump_ascii ) ;
 }
 
@@ -290,7 +380,11 @@ void dump_pulse_block( FILE * const output_file, const byte * data, uint data_si
 
     fprintf( output_file, "PULSES\n" ) ;
 
+    // Dump all pulses in the block.
+
     while ( data_size > 0 ) {
+
+        // Fetch the pulse repeat count and duration.
 
         uint count = 1 ;
         uint duration = GET2() ;
@@ -303,6 +397,8 @@ void dump_pulse_block( FILE * const output_file, const byte * data, uint data_si
             duration <<= 16 ;
             duration |= GET2() ;
         }
+
+        // Output the appropriate number of pulses, according to the command line options.
 
         if ( option_expand_pulses ) {
             while ( count-- > 0 ) {
@@ -404,6 +500,10 @@ int main( int argc, char * * argv )
                 output_name = argv[ ++i ] ;
                 break ;
             }
+            case 'p': {
+                option_dump_pulses = true ;
+                break ;
+            }
             case 'a': {
                 option_dump_ascii = true ;
                 break ;
@@ -428,6 +528,7 @@ int main( int argc, char * * argv )
             case 'h': {
                 fprintf( stderr, "usage: pzx2txt [-a|-d] [-o output_file] [input_file]\n" ) ;
                 fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
+                fprintf( stderr, "-p     dump bytes in data blocks as pulses\n" ) ;
                 fprintf( stderr, "-a     dump bytes in data blocks as ASCII characters when possible\n" ) ;
                 fprintf( stderr, "-x     dump bytes in data blocks as headers when possible\n" ) ;
                 fprintf( stderr, "-d     don't dump content of data blocks\n" ) ;

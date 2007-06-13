@@ -121,6 +121,8 @@ void render_bits(
  */
 void render_data_block( const byte * data, uint data_size )
 {
+    hope( data ) ;
+
     // Fetch the numbers.
 
     uint bit_count = GET4() ;
@@ -166,6 +168,8 @@ void render_data_block( const byte * data, uint data_size )
  */
 void render_pulse_block( const byte * data, uint data_size )
 {
+    hope( data ) ;
+
     // Prepare initial level.
 
     bool level = false ;

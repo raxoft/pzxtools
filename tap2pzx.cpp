@@ -51,7 +51,7 @@ int main( int argc, char * * argv )
                 output_name = argv[ ++i ] ;
                 break ;
             }
-            case 's': {
+            case 'p': {
                 const uint value = uint( atoi( argv[ ++i ] ) ) ;
                 if ( value > 10 * 60 * 1000 ) {
                     fail( "pause duration %ums is out of range", value ) ;
@@ -67,6 +67,7 @@ int main( int argc, char * * argv )
             case 'h': {
                 fprintf( stderr, "usage: tap2pzx [-o output_file] [input_file]\n" ) ;
                 fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
+                fprintf( stderr, "-p n   separate TAP blocks with pause of given duration (in ms)\n" ) ;
                 return EXIT_FAILURE ;
             }
         }

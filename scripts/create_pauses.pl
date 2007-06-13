@@ -4,8 +4,6 @@
 
 my $pulse_limit = shift or die "usage: $0 <pulse_limit>\n" ;
 
-my @pulses ;
-
 my $pause_duration = 0 ;
 
 my $level = 0 ;
@@ -34,4 +32,9 @@ while(<>) {
     }
 
     print ;
+}
+
+if ( $pause_duration > 0 ) {
+    print "\n" ;
+    print "PAUSE $pause_duration\n" ;
 }

@@ -377,7 +377,7 @@ bool pzx_matches( const word * const pulses, const word * const end, const word 
     hope( pulses ) ;
     hope( end ) ;
     hope( pulses <= end ) ;
-    hope( sequence ) ;
+    hope( sequence || count == 0 ) ;
 
     if ( ( count == 0 ) || ( count > uint( end - pulses ) ) ) {
         return false ;
@@ -445,9 +445,15 @@ bool pzx_pack(
             return false ;
         }
 
-        // Include the new bit, and eventually store the collected byte to the buffer.
+        // Include the new bit, checking the maximum limit as well.
 
         bit_count++ ;
+
+        if ( bit_count >= 0x80000000 ) {
+            return false ;
+        }
+
+        // Store the completed byte to the buffer when necessary.
 
         if ( ( bit_count & 7 ) == 0 ) {
             pack_buffer.write< byte >( value ) ;
@@ -543,7 +549,15 @@ bool pzx_pack(
 
     // Make sure the limit is sane.
 
-    uint limit = ( sequence_limit <= 0xFF ? sequence_limit : 0xFF ) ;
+    uint limit = sequence_limit ;
+
+    if ( limit > pulse_count ) {
+        limit = pulse_count ;
+    }
+
+    if ( limit > 255 ) {
+        limit = 255 ;
+    }
 
     // Try all sequence combinations shorter than given limit.
     //

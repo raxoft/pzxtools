@@ -45,11 +45,9 @@ private:
 
     void reallocate( const uint new_size )
     {
-        hope( new_size > buffer_size ) ;
-
         buffer = static_cast< byte * >( std::realloc( buffer, new_size ) ) ;
 
-        if ( buffer == NULL ) {
+        if ( buffer == NULL || new_size <= buffer_size ) {
             fail( "out of memory" ) ;
         }
 

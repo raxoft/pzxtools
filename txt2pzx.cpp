@@ -47,6 +47,9 @@ const uint TAG_TAG          = TAG('T','A','G',' ') ;
 Buffer data_buffer ;
 Buffer bit_0_buffer ;
 Buffer bit_1_buffer ;
+Buffer pack_buffer ;
+uint sequence_limit ;
+uint sequence_order ;
 uint tail_cycles ;
 uint expected_data_size ;
 uint extra_bit_count ;
@@ -314,6 +317,24 @@ void finish_block( uint & tag, const uint new_tag )
     // Process the gathered data.
 
     switch ( tag ) {
+        case TAG_PACK:
+        {
+            const word * const pulses = pack_buffer.get_typed_data< word >() ;
+            const uint pulse_count = pack_buffer.get_data_size() / 2 ;
+
+            if ( ! pzx_pack( pulses, pulse_count, output_level, sequence_limit, sequence_order, tail_cycles ) ) {
+                warn( "packing the pulses is not possible" ) ;
+                pzx_pulses( pulses, pulse_count, output_level, tail_cycles ) ;
+            }
+
+            pack_buffer.clear() ;
+
+            tail_cycles = 0 ;
+            output_level = false ;
+
+            break ;
+
+        }
         case TAG_DATA:
         {
             uint data_size = data_buffer.get_data_size() ;
@@ -439,7 +460,16 @@ void process_line( uint & last_block_tag, const char * const line )
         {
             finish_block( last_block_tag, tag ) ;
 
-            output_level = false ;
+            uint level = 0 ;
+            parse_number( level, s, 1, "initial pulse level" ) ;
+            output_level = ( level != 0 ) ;
+
+            sequence_limit = 2 ;
+            parse_number( sequence_limit, s, 255 ) ;
+
+            sequence_order = 2 ;
+            parse_number( sequence_order, s, 2 ) ;
+
             break ;
         }
         case TAG_PULSE:
@@ -461,6 +491,18 @@ void process_line( uint & last_block_tag, const char * const line )
 
             uint count = 1 ;
             parse_number( count, s ) ;
+
+            // In case we are packing the pulses, store them to the pulse buffer.
+
+            if ( last_block_tag == TAG_PACK ) {
+                if ( duration > 0xFFFF ) {
+                    fail( "pulse duration %u is out of range to be packed", duration ) ;
+                }
+                while ( count-- > 0 ) {
+                    pack_buffer.write< word >( duration ) ;
+                }
+                break ;
+            }
 
             // Store the pulse sequence as specified if requested and possible.
 
@@ -516,7 +558,7 @@ void process_line( uint & last_block_tag, const char * const line )
         }
         case TAG_BIT0:
         {
-            check_tag( tag, last_block_tag, TAG_DATA, TAG_PACK ) ;
+            check_tag( tag, last_block_tag, TAG_DATA ) ;
 
             uint duration ;
             while ( parse_number( duration, s, 0xFFFF ) ) {
@@ -526,7 +568,7 @@ void process_line( uint & last_block_tag, const char * const line )
         }
         case TAG_BIT1:
         {
-            check_tag( tag, last_block_tag, TAG_DATA, TAG_PACK ) ;
+            check_tag( tag, last_block_tag, TAG_DATA ) ;
 
             uint duration ;
             while ( parse_number( duration, s, 0xFFFF ) ) {

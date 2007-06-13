@@ -120,6 +120,10 @@ int main( int argc, char * * argv )
         static word sequence_1[] = { BIT_1_CYCLES, BIT_1_CYCLES } ;
 
         pzx_data( data, 8 * size, true, 2, 2, sequence_0, sequence_1, TAIL_CYCLES ) ;
+
+        // Separate the blocks with minimum pause.
+
+        pzx_pause( 2 * MILLISECOND_CYCLES, false ) ;
     }
 
     // Close the input file.

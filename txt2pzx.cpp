@@ -315,9 +315,14 @@ void check_tag( const uint tag, const uint block_tag, const uint block_tag_1, co
         return ;
     }
 
-    const uint tags[] = { big_endian( tag ), big_endian( block_tag ) } ;
+    const uint tags[] = { big_endian( tag ), big_endian( block_tag ), big_endian( block_tag_1 ) } ;
 
-    fail( "tag %.4s is not valid in %.4s block", (char *) tags, (char *) ( tags + 1 ) ) ;
+    if ( block_tag == 0 ) {
+        fail( "tag %.4s is not valid outside of %.4s block", (char *) tags, (char *) ( tags + 2 ) ) ;
+    }
+    else {
+        fail( "tag %.4s is not valid in %.4s block", (char *) tags, (char *) ( tags + 1 ) ) ;
+    }
 }
 
 /**

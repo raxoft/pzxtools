@@ -32,7 +32,7 @@ tidy: clean
 	rm -rf $(PROGS)
 
 archive:
-	tar czvf ../tzx2pzx.tar.gz *.cpp *.h Makefile
+	tar czvf ../pzxtools.tar.gz *.cpp *.h Makefile
 
 dep:
 	sed -n -e '1,/^TOUCH=/ p' <Makefile >Makefile.new

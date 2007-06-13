@@ -219,44 +219,6 @@ void dump_bits(
 }
 
 /**
- * Dump the PULSE block to given file.
- */
-void dump_pulse_block( FILE * const output_file, const byte * data, uint data_size )
-{
-    hope( data ) ;
-
-    fprintf( output_file, "PULSES\n" ) ;
-
-    while ( data_size > 0 ) {
-
-        uint count = 1 ;
-        uint duration = GET2() ;
-        if ( duration > 0x8000 ) {
-            count = duration & 0x7FFF ;
-            duration = GET2() ;
-        }
-        if ( duration >= 0x8000 ) {
-            duration &= 0x7FFF ;
-            duration <<= 16 ;
-            duration |= GET2() ;
-        }
-
-        if ( option_expand_pulses ) {
-            while ( count-- > 0 ) {
-                fprintf( output_file, "PULSE %u\n", duration ) ;
-            }
-        }
-        else {
-            fprintf( output_file, "PULSE %u", duration ) ;
-            if ( count > 1 ) {
-                fprintf( output_file, " %u", count ) ;
-            }
-            fprintf( output_file, "\n" ) ;
-        }
-    }
-}
-
-/**
  * Dump the DATA block to given file.
  */
 void dump_data_block( FILE * const output_file, const byte * data, uint data_size )
@@ -317,6 +279,44 @@ void dump_data_block( FILE * const output_file, const byte * data, uint data_siz
     }
 
     dump_data( output_file, data, data_size, option_dump_ascii ) ;
+}
+
+/**
+ * Dump the PULSE block to given file.
+ */
+void dump_pulse_block( FILE * const output_file, const byte * data, uint data_size )
+{
+    hope( data ) ;
+
+    fprintf( output_file, "PULSES\n" ) ;
+
+    while ( data_size > 0 ) {
+
+        uint count = 1 ;
+        uint duration = GET2() ;
+        if ( duration > 0x8000 ) {
+            count = duration & 0x7FFF ;
+            duration = GET2() ;
+        }
+        if ( duration >= 0x8000 ) {
+            duration &= 0x7FFF ;
+            duration <<= 16 ;
+            duration |= GET2() ;
+        }
+
+        if ( option_expand_pulses ) {
+            while ( count-- > 0 ) {
+                fprintf( output_file, "PULSE %u\n", duration ) ;
+            }
+        }
+        else {
+            fprintf( output_file, "PULSE %u", duration ) ;
+            if ( count > 1 ) {
+                fprintf( output_file, " %u", count ) ;
+            }
+            fprintf( output_file, "\n" ) ;
+        }
+    }
 }
 
 /**

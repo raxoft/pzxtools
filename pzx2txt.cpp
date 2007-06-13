@@ -15,6 +15,11 @@ namespace {
 bool option_dump_ascii ;
 
 /**
+ * Flag set when data should be dumped as headers when possible.
+ */
+bool option_dump_headers ;
+
+/**
  * Flag set when dumping of content of DATA blocks should be suppresed.
  */
 bool option_skip_data ;
@@ -126,7 +131,7 @@ void dump_strings( FILE * const output_file, const char * const prefix, const by
 /**
  * Dump single data line to a file.
  */
-void dump_data_line( FILE * const output_file, const byte * const data, const uint data_size )
+void dump_data_line( FILE * const output_file, const byte * const data, const uint data_size, const bool dump_ascii = false )
 {
     if ( data_size == 0 ) {
         return ;
@@ -136,7 +141,7 @@ void dump_data_line( FILE * const output_file, const byte * const data, const ui
 
     for ( uint i = 0 ; i < data_size ; i++ ) {
         const byte b = data[ i ] ;
-        if ( option_dump_ascii && b > 32 && b < 127 ) {
+        if ( dump_ascii && b > 32 && b < 127 ) {
             fprintf( output_file, ".%c", b ) ;
         }
         else {
@@ -150,7 +155,7 @@ void dump_data_line( FILE * const output_file, const byte * const data, const ui
 /**
  * Dump data block to a file.
  */
-void dump_data( FILE * const output_file, const byte * data, uint data_size )
+void dump_data( FILE * const output_file, const byte * data, uint data_size, const bool dump_ascii = false )
 {
     if ( option_skip_data ) {
         return ;
@@ -158,11 +163,11 @@ void dump_data( FILE * const output_file, const byte * data, uint data_size )
 
     const uint limit = 48 ;
     while ( data_size > limit ) {
-        dump_data_line( output_file, data, limit ) ;
+        dump_data_line( output_file, data, limit, dump_ascii ) ;
         data += limit ;
         data_size -= limit ;
     }
-    dump_data_line( output_file, data, data_size ) ;
+    dump_data_line( output_file, data, data_size, dump_ascii ) ;
 }
 
 /**
@@ -246,7 +251,26 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
                 warn( "bit count %u does not match the actual data size %u", bit_count, data_size ) ;
             }
 
-            dump_data( output_file, data, data_size ) ;
+            if ( option_dump_headers && data_size == 19 ) {
+
+                const uint leader = GET1() ;
+                const uint type = GET1() ;
+                fprintf( output_file, "BYTE %u %u\n", leader, type ) ;
+
+                dump_data_line( output_file, data, 10, true ) ;
+                data += 10 ;
+
+                const uint size = GET2() ;
+                const uint start = GET2() ;
+                const uint extra = GET2() ;
+                fprintf( output_file, "WORD %u %u %u\n", size, start, extra ) ;
+
+                const uint checksum = GET1() ;
+                fprintf( output_file, "BYTE %u\n", checksum ) ;
+                return ;
+            }
+
+            dump_data( output_file, data, data_size, option_dump_ascii ) ;
             return ;
         }
         case PZX_PAUSE: {
@@ -268,7 +292,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             fwrite( &tag, 4, 1, output_file ) ;
             fprintf( output_file, "\n" ) ;
             fprintf( output_file, "SIZE %u\n", data_size ) ;
-            dump_data( output_file, data, data_size ) ;
+            dump_data( output_file, data, data_size, option_dump_ascii ) ;
             return ;
         }
     }
@@ -315,6 +339,10 @@ int main( int argc, char * * argv )
                 option_dump_ascii = true ;
                 break ;
             }
+            case 'x': {
+                option_dump_headers = true ;
+                break ;
+            }
             case 'd': {
                 option_skip_data = true ;
                 break ;
@@ -332,6 +360,7 @@ int main( int argc, char * * argv )
                 fprintf( stderr, "usage: pzx2txt [-a|-d] [-o output_file] [input_file]\n" ) ;
                 fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
                 fprintf( stderr, "-a     dump bytes in data blocks as ASCII characters when possible\n" ) ;
+                fprintf( stderr, "-x     dump bytes in data blocks as headers when possible\n" ) ;
                 fprintf( stderr, "-d     don't dump content of data blocks\n" ) ;
                 fprintf( stderr, "-e     expand pulses, dumping each one on separate line\n" ) ;
                 return EXIT_FAILURE ;

@@ -522,7 +522,8 @@ bool pzx_pack(
         for ( uint i = 0 ; i < pulse_count_1 ; i++ ) {
             duration_1 += sequence_1[ i ] ;
         }
-        order = ( ( duration_0 <= duration_1 ) ? 0 : 1 ) ;
+
+        order = ( ( duration_0 == 0 ) || ( duration_1 == 0 ) || ( duration_0 <= duration_1 ) ? 0 : 1 ) ;
     }
 
     if ( order == 0 ) {

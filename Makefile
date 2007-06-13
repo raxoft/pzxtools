@@ -51,7 +51,7 @@ tap2pzx.o : tap2pzx.cpp pzx.h tap.h
 txt2pzx.o : txt2pzx.cpp pzx.h
 tzx.o : tzx.cpp csw.h endian.h pzx.h tap.h tzx.h
 tzx2pzx.o : tzx2pzx.cpp pzx.h tzx.h
-wav.o : wav.cpp wav.h
+wav.o : wav.cpp buffer.h wav.h
 buffer.h : debug.h endian.h
 	$(TOUCH) $@
 csw.h : buffer.h
@@ -64,5 +64,5 @@ tap.h : types.h
 	$(TOUCH) $@
 tzx.h : types.h
 	$(TOUCH) $@
-wav.h : types.h
+wav.h : endian.h
 	$(TOUCH) $@

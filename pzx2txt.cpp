@@ -171,6 +171,155 @@ void dump_data( FILE * const output_file, const byte * data, uint data_size, con
 }
 
 /**
+ * Dump bits from given byte using given (little endian) pulse sequences.
+ */
+void dump_bits(
+    FILE * const output_file,
+    uint bit_count,
+    uint bits,
+    const uint pulse_count_0,
+    const uint pulse_count_1,
+    const byte * const sequence_0,
+    const byte * const sequence_1
+)
+{
+    hope( sequence_0 || pulse_count_0 == 0 ) ;
+    hope( sequence_1 || pulse_count_1 == 0 ) ;
+
+    // Output all bits.
+
+    while ( bit_count-- > 0 ) {
+
+        // Choose the appropriate sequence for given bit.
+
+        const byte * sequence ;
+        uint count ;
+
+        if ( ( bits & 0x80 ) == 0 ) {
+            sequence = sequence_0 ;
+            count = pulse_count_0 ;
+        }
+        else {
+            sequence = sequence_1 ;
+            count = pulse_count_1 ;
+        }
+
+        // Use next bit next time.
+
+        bits <<= 1 ;
+
+        // Now output the appropriate amount of pulses.
+
+        while ( count-- > 0 ) {
+            uint duration = *sequence++ ;
+            duration += *sequence++ << 8 ;
+            fprintf( output_file, "PULSE %u\n", duration ) ;
+        }
+    }
+}
+
+/**
+ * Dump the PULSE block to given file.
+ */
+void dump_pulse_block( FILE * const output_file, const byte * data, uint data_size )
+{
+    hope( data ) ;
+
+    fprintf( output_file, "PULSES\n" ) ;
+
+    while ( data_size > 0 ) {
+
+        uint count = 1 ;
+        uint duration = GET2() ;
+        if ( duration > 0x8000 ) {
+            count = duration & 0x7FFF ;
+            duration = GET2() ;
+        }
+        if ( duration >= 0x8000 ) {
+            duration &= 0x7FFF ;
+            duration <<= 16 ;
+            duration |= GET2() ;
+        }
+
+        if ( option_expand_pulses ) {
+            while ( count-- > 0 ) {
+                fprintf( output_file, "PULSE %u\n", duration ) ;
+            }
+        }
+        else {
+            fprintf( output_file, "PULSE %u", duration ) ;
+            if ( count > 1 ) {
+                fprintf( output_file, " %u", count ) ;
+            }
+            fprintf( output_file, "\n" ) ;
+        }
+    }
+}
+
+/**
+ * Dump the DATA block to given file.
+ */
+void dump_data_block( FILE * const output_file, const byte * data, uint data_size )
+{
+    hope( data ) ;
+
+    uint bit_count = GET4() ;
+    const uint tail_cycles = GET2() ;
+    const uint pulse_count_0 = GET1() ;
+    const uint pulse_count_1 = GET1() ;
+
+    fprintf( output_file, "DATA %u\n", ( bit_count >> 31 ) ) ;
+
+    bit_count &= 0x7FFFFFFF ;
+
+    fprintf( output_file, "SIZE %u\n", ( bit_count / 8 ) ) ;
+    if ( ( bit_count & 7 ) != 0 ) {
+        fprintf( output_file, "BITS %u\n", ( bit_count & 7 ) ) ;
+    }
+
+    fprintf( output_file, "TAIL %u\n", tail_cycles ) ;
+
+    fprintf( output_file, "BIT0" ) ;
+    for ( uint i = 0 ; i < pulse_count_0 ; i++ ) {
+        const uint duration = GET2() ;
+        fprintf( output_file, " %u", duration ) ;
+    }
+    fprintf( output_file, "\n" ) ;
+
+    fprintf( output_file, "BIT1" ) ;
+    for ( uint i = 0 ; i < pulse_count_1 ; i++ ) {
+        const uint duration = GET2() ;
+        fprintf( output_file, " %u", duration ) ;
+    }
+    fprintf( output_file, "\n" ) ;
+
+    if ( data_size != ( ( bit_count + 7 ) / 8 ) ) {
+        warn( "bit count %u does not match the actual data size %u", bit_count, data_size ) ;
+    }
+
+    if ( option_dump_headers && data_size == 19 ) {
+
+        const uint leader = GET1() ;
+        const uint type = GET1() ;
+        fprintf( output_file, "BYTE %u %u\n", leader, type ) ;
+
+        dump_data_line( output_file, data, 10, true ) ;
+        data += 10 ;
+
+        const uint size = GET2() ;
+        const uint start = GET2() ;
+        const uint extra = GET2() ;
+        fprintf( output_file, "WORD %u %u %u\n", size, start, extra ) ;
+
+        const uint checksum = GET1() ;
+        fprintf( output_file, "BYTE %u\n", checksum ) ;
+        return ;
+    }
+
+    dump_data( output_file, data, data_size, option_dump_ascii ) ;
+}
+
+/**
  * Dump given PZX block to given file.
  */
 void dump_block( FILE * const output_file, const uint tag, const byte * data, uint data_size )
@@ -186,91 +335,11 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             return ;
         }
         case PZX_PULSES: {
-            fprintf( output_file, "PULSES\n" ) ;
-            while ( data_size > 0 ) {
-
-                uint count = 1 ;
-                uint duration = GET2() ;
-                if ( duration > 0x8000 ) {
-                    count = duration & 0x7FFF ;
-                    duration = GET2() ;
-                }
-                if ( duration >= 0x8000 ) {
-                    duration &= 0x7FFF ;
-                    duration <<= 16 ;
-                    duration |= GET2() ;
-                }
-
-                if ( option_expand_pulses ) {
-                    while ( count-- > 0 ) {
-                        fprintf( output_file, "PULSE %u\n", duration ) ;
-                    }
-                }
-                else {
-                    fprintf( output_file, "PULSE %u", duration ) ;
-                    if ( count > 1 ) {
-                        fprintf( output_file, " %u", count ) ;
-                    }
-                    fprintf( output_file, "\n" ) ;
-                }
-            }
-            break ;
+            dump_pulse_block( output_file, data, data_size ) ;
+            return ;
         }
         case PZX_DATA: {
-            uint bit_count = GET4() ;
-            const uint tail_cycles = GET2() ;
-            const uint pulse_count_0 = GET1() ;
-            const uint pulse_count_1 = GET1() ;
-
-            fprintf( output_file, "DATA %u\n", ( bit_count >> 31 ) ) ;
-
-            bit_count &= 0x7FFFFFFF ;
-
-            fprintf( output_file, "SIZE %u\n", ( bit_count / 8 ) ) ;
-            if ( ( bit_count & 7 ) != 0 ) {
-                fprintf( output_file, "BITS %u\n", ( bit_count & 7 ) ) ;
-            }
-
-            fprintf( output_file, "TAIL %u\n", tail_cycles ) ;
-
-            fprintf( output_file, "BIT0" ) ;
-            for ( uint i = 0 ; i < pulse_count_0 ; i++ ) {
-                const uint duration = GET2() ;
-                fprintf( output_file, " %u", duration ) ;
-            }
-            fprintf( output_file, "\n" ) ;
-
-            fprintf( output_file, "BIT1" ) ;
-            for ( uint i = 0 ; i < pulse_count_1 ; i++ ) {
-                const uint duration = GET2() ;
-                fprintf( output_file, " %u", duration ) ;
-            }
-            fprintf( output_file, "\n" ) ;
-
-            if ( data_size != ( ( bit_count + 7 ) / 8 ) ) {
-                warn( "bit count %u does not match the actual data size %u", bit_count, data_size ) ;
-            }
-
-            if ( option_dump_headers && data_size == 19 ) {
-
-                const uint leader = GET1() ;
-                const uint type = GET1() ;
-                fprintf( output_file, "BYTE %u %u\n", leader, type ) ;
-
-                dump_data_line( output_file, data, 10, true ) ;
-                data += 10 ;
-
-                const uint size = GET2() ;
-                const uint start = GET2() ;
-                const uint extra = GET2() ;
-                fprintf( output_file, "WORD %u %u %u\n", size, start, extra ) ;
-
-                const uint checksum = GET1() ;
-                fprintf( output_file, "BYTE %u\n", checksum ) ;
-                return ;
-            }
-
-            dump_data( output_file, data, data_size, option_dump_ascii ) ;
+            dump_data_block( output_file, data, data_size ) ;
             return ;
         }
         case PZX_PAUSE: {
@@ -298,7 +367,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
     }
 
     if ( data_size > 0 ) {
-        warn( "excessive data (%u byte%s) at end of block detected", data_size, ( data_size > 1 ? "s" : "" ) ) ;
+        warn( "excessive data (%u byte%s) detected at end of block", data_size, ( data_size > 1 ? "s" : "" ) ) ;
     }
 }
 

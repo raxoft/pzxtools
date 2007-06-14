@@ -1,0 +1,174 @@
+PZX text format syntax
+======================
+
+The text format consists of sequence of lines, each line starting with a
+keyword, followed by values appropriate for that keyword. Empty lines and
+lines starting with # are ignored.
+
+Overall the format closely matches the PZX format structure. Some keywords
+introduce corresponding PZX blocks while other keywords are used to provide
+data for the current block. All keywords are explained in detail below.
+
+Current pulse level is maintained during the processing of the text input.
+It starts low at the beginning and each keyword may depend on and/or affect
+the current pulse level. Although most people don't need to worry about this
+at all, it is explained in detail below as well.
+
+Keywords are simple ASCII character sequences listed later. Each keyword
+specifies what values it uses and whether they are required (enclosed in <>)
+or optional (enclosed in []). Keyword values themselves are either numbers,
+strings, or data:
+
+- Numbers are normal unsigned numbers, written in decimal by default, in
+hexadecimal if prefixed with 0x, or in binary when prefixed with 0b.
+
+- Strings are enclosed in double quotes, and backslash is used to escape
+double quotes and backslash. The sequences \n, \r, \t are recognized as
+well, as is the \xNN sequence for encoding any character in hexadecimal.
+
+- Data is a sequence of octets, each encoded either as two character
+hexadecimal number, or as a dot followed by the corresponding ASCII
+character.
+
+The following block-introducing keywords are defined:
+
+PZX [major.minor]
+-----------------
+
+This keyword introduces the PZX ZXTP header block.
+
+The major and minor are printed only for reference by pzx2txt and are
+entirely ignored when encoding.
+
+Keywords this block may contain: INFO
+
+Pulse level: not affected.
+
+Example:
+
+	PZX 1.0
+	INFO "Test tape file"
+
+PULSES
+------
+
+This keyword introduces the PZX PULS block.
+
+The block itself consists of a sequence of arbitrary pulses.
+
+Keywords this block may contain: PULSE
+
+Pulse level: always set to low.
+
+Example:
+
+	PULSES
+	PULSE 2168 8063
+	PULSE 667
+	PULSE 735
+
+DATA [pulse level]
+------------------
+
+This keyword introduces the PZX DATA block.
+
+The block itself consists of sequence of octets, and information about how to
+convert the octets to pulses.
+
+The optional pulse level may be used to specify the initial pulse level of
+the DATA block. When not present, the current pulse level is used.
+
+Keywords this block may contain: SIZE, BITS, BIT0, BIT1, TAIL, BODY, BYTE, WORD, XOR, ADD, SUM
+
+Pulse level: always set to low.
+
+Example:
+
+	DATA
+	SIZE 19
+	TAIL 945
+	BIT0 855 855
+	BIT1 1710 1710
+	BYTE 0 0
+	BODY .T.E.S.T. .T.A.P.E.
+	WORD 1234 10 1234
+	XOR
+
+PACK [pulse level] [sequence limit] [sequence order]
+----------------------------------------------------
+
+This keyword introduces either the PZX DATA or the PZX PULS block,
+depending on whether the following pulses can be packed or not, respectively.
+
+The block itself consists of a sequence of pulses. Once the block is complete, an
+attempt is made to find two pulse sequences which may be used to encode all
+of the pulses as a sequence of bits. If such sequences are found, the pulses
+are converted to the corresponding DATA block. If no such sequences are
+found, warning is issued and the pulses are stored as usual as part of the
+PULS block.
+
+The optional pulse level may be used to set the current pulse level. When
+not present, the current pulse level is left intact.
+
+The sequence limit specifies how long pulse sequences to consider at maximum
+when searching for sequences used to encode the bits. When not present, the
+default value 2 is used. The maximum value is 255.
+
+The sequence order is may be used to control which sequence is going to
+become sequence 0 and which sequence 1. When set to 0 or 1, the sequence
+starting at the first pulse becomes sequence 0 or 1, respectively. When set
+to 2, the sequence whose total duration is shorter becomes sequence 0. When
+not present, the default value 2 is used.
+
+Keywords this block may contain: PULSE, TAIL
+
+Pulse level: may be forced, see above.
+
+Example:
+
+	PACK
+	PULSE 855 4
+	PULSE 1710 2
+	PULSE 855 2
+	PULSE 1710 8
+	TAIL 945
+
+PAUSE <duration> [pulse level]
+------------------------------
+
+This keyword introduces the PZX PAUSE block.
+
+The block itself consists of a pause pulse of given duration.
+
+The optional pulse level may be used to specify the level of the pause pulse
+as well as the current pulse level. When not present, it is as if it was set to low.
+
+Keywords this block may contain: none
+
+Pulse level: always forced, see above.
+
+Example:
+
+	PAUSE 3500000
+	PAUSE 3500 1
+
+STOP [flags]
+------------
+
+This keyword introduces the PZX STOP block.
+
+The block itself consists of information when to stop the virtual tape deck.
+
+The optional flags value may specify when exactly to do that. Value 0 means
+stop always, value 1 means stop only in 48k mode. See PZX format
+specification for more details and possibly other values. When not present,
+it is as if it was set to 0.
+
+Keywords this block may contain: none
+
+Pulse level: not affected
+
+Example:
+
+	STOP
+	STOP 1

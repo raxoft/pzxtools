@@ -22,6 +22,7 @@ txt2pzx - create PZX files from text input.
 
 The more detailed of each of these tools follows.
 
+
 Converting to PZX
 =================
 
@@ -66,6 +67,7 @@ archiving program, it may even become smaller than the original.
 
 Options: none
 
+
 Converting from PZX
 ===================
 
@@ -83,6 +85,7 @@ Options:
 -s n	Create the WAV file using given sample rate, specified in Hz.
 
 	By default, the 44100Hz sample rate is used, which corresponds to CD quality.
+
 
 Messing up with PZX
 ===================
@@ -162,3 +165,11 @@ Options:
 	are merged together whenever possible.
 
 	See also the -e option of pzx2txt.
+
+
+History
+=======
+
+1.0 (14.6.2007)
+
++ initial release.

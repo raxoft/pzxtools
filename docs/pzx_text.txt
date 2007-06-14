@@ -1,5 +1,5 @@
-PZX text format syntax
-======================
+PZX text format syntax version 1.0
+==================================
 
 This is the description of the PZX text format as used by the pzx2txt and
 txt2pzx tools.
@@ -32,6 +32,7 @@ well, as is the \xNN sequence for encoding any character in hexadecimal.
 - Data is a sequence of octets, each encoded either as two character
 hexadecimal number, or as a dot followed by the corresponding ASCII
 character.
+
 
 Block introducing keywords
 ==========================
@@ -218,6 +219,7 @@ Example:
 	TAG wtfk
 	BODY FF001234
 
+
 Block content keywords
 ======================
 
@@ -374,3 +376,11 @@ SUB [initial value]
 -------------------
 
 Like XOR, except that subtraction is used instead of exclusive-or.
+
+
+History
+=======
+
+1.0 (14.6.2007)
+
++ initial release.

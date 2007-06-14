@@ -20,7 +20,7 @@ includes few perl scripts which may be used for the latter.
 You can find the programs precompiled for Windows platform in the bin/
 directory. The source files themselves are stored in the src/ directory,
 simply cd there and run make to build the programs on Linux/Unix platforms.
-The perl scripts for processing the textual form can be found in scripts/ directory.
+The scripts for processing the textual form can be found in scripts/ directory.
 And last but not least, the documentation can be found in the docs/ directory.
 
 Enjoy!

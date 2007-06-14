@@ -1,0 +1,38 @@
+PZX tools documentation
+=======================
+
+The PZX tools suite consists of several tools for converting data to and
+from PZX format. Each of these tools reads the data from file given on
+command line (or standard input if no file name is specified on command
+line) and writes the output to file specified with the -o option (or standard
+output if no such file name is specified). Each tool may also have its own
+set of additional options, which may be obtained simply by using the -h option.
+
+The purpose of each tool should easy to guess from its name, however here is
+the list to make it clear:
+
+tzx2pzx - convert TZX files to PZX files.
+tap2pzx	- convert TAP files to PZX files.
+csw2pzx	- convert CSW files to PZX files.
+
+pzx2wav - convert PZX files to WAV files.
+
+pzx2txt - dump PZX files to text output.
+txt2pzx - create PZX files from text input.
+
+The more detailed of each of these tools follows.
+
+Converting to PZX
+=================
+
+tap2pzx
+-------
+
+This tool can be used to convert TAP (aka BLK) files to PZX. Normally you
+would not need to do that, as TAP files are supported by any emulator which
+supports tape files at all, but it may be eventually useful if you would
+like to add things which TAP files can't store. This may include things like
+textual information about the tape file itself, specific pause blocks
+between the data blocks, or browse or stop blocks which may help in case of
+multilevel games.
+

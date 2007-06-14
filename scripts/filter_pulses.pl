@@ -26,7 +26,7 @@ loop: while(<>) {
         next ;
     }
 
-    if ( my( $duration, $a, $b ) = /^FILTER\s*$/i ) {
+    if ( /^FILTER\s*$/i ) {
         @filters = () ;
         next ;
     }

@@ -698,7 +698,7 @@ void process_line( uint & last_block_tag, const char * const line )
             finish_block( last_block_tag, tag ) ;
 
             uint flags = 0 ;
-            parse_number( flags, s, "stop flags", 0xFFFF ) ;
+            parse_number( flags, s, "stop flags", 0xFFFF, false ) ;
 
             pzx_stop( flags ) ;
             break ;

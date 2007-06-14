@@ -48,8 +48,8 @@ PZX [major.minor]
 
 This keyword introduces the PZX ZXTP header block.
 
-The major and minor are printed only for reference by pzx2txt and are
-entirely ignored when encoding.
+The major and minor version numbers are printed only for reference by
+pzx2txt and are entirely ignored when encoding.
 
 Keywords this block may contain: INFO
 

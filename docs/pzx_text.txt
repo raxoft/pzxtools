@@ -1,6 +1,9 @@
 PZX text format syntax
 ======================
 
+This is the description of the PZX text format as used by the pzx2txt and
+txt2pzx tools.
+
 The text format consists of sequence of lines, each line starting with a
 keyword, followed by values appropriate for that keyword. Empty lines and
 lines starting with # are ignored.
@@ -30,7 +33,14 @@ well, as is the \xNN sequence for encoding any character in hexadecimal.
 hexadecimal number, or as a dot followed by the corresponding ASCII
 character.
 
-The following block-introducing keywords are defined:
+Block introducing keywords
+==========================
+
+The block-introducing keywords are defined below.
+
+Please note that the description of how pulse level is affected refer to the
+internal pulse level maintainted while processing the text form, not how the
+resulting PZX blocks affect the pulse level in the PZX file.
 
 PZX [major.minor]
 -----------------
@@ -120,7 +130,7 @@ starting at the first pulse becomes sequence 0 or 1, respectively. When set
 to 2, the sequence whose total duration is shorter becomes sequence 0. When
 not present, the default value 2 is used.
 
-Keywords this block may contain: PULSE, TAIL
+Keywords this block may contain: PULSE
 
 Pulse level: may be forced, see above.
 
@@ -131,7 +141,7 @@ Example:
 	PULSE 1710 2
 	PULSE 855 2
 	PULSE 1710 8
-	TAIL 945
+	PULSE 945
 
 PAUSE <duration> [pulse level]
 ------------------------------
@@ -166,9 +176,204 @@ it is as if it was set to 0.
 
 Keywords this block may contain: none
 
-Pulse level: not affected
+Pulse level: not affected.
 
 Example:
 
 	STOP
 	STOP 1
+
+BROWSE <"string">
+-----------------
+
+This keyword introduces the PZX BRWS block.
+
+The block itself consists of string information used as aid while browsing
+the tape content. See PZX format specification for more info about the string content.
+
+Keywords this block may contain: none
+
+Pulse level: not affected.
+
+Example:
+
+	BROWSE "Level 1"
+
+TAG <tag name>
+--------------
+
+This keyword introduces any unknown PZX block.
+
+The block itself consists of an opaque sequence of octets. 
+
+The tag name is the tag used for the PZX block. It must consists of exactly
+four ASCII characters.
+
+Keywords this block may contain: SIZE, BODY, BYTE, WORD, XOR, ADD, SUM
+
+Pulse level: not affected.
+
+Example:
+
+	TAG wtfk
+	BODY FF001234
+
+Block content keywords
+======================
+
+The keywords which provide the block content are defined below.
+
+Note that some of them may appear only in one specific block, while others
+may be used in multiple blocks. However, even in such case their meaning
+remains the same.
+
+For examples, see the description of the corresponding block keyword.
+
+INFO <"string">
+---------------
+
+This keyword provides UTF-8 encoded string used in the PZX header block.
+Each such keyword adds one such string. The first string is the name of the
+tape, the remaining pairs provide additional information. See the PZX format
+specification for more specific details and requirements.
+
+Blocks this keyword may appear in: PZX
+
+Pulse level: not affected.
+
+PULSE <duration> [count]
+------------------------
+
+This keyword adds given amount of pulses of given duration to the current
+block.
+
+Both duration and count are normally arbitrary 32 bit numbers, but may be
+limited to less bits in case some special features are used when encoding.
+For example, using using -p option of txt2pzx limits duration to 31 bits and
+count to 15 bits, and use of the PACK block limits the duration to 16 bits.
+
+Blocks this keyword may appear in: PULSES, PACK
+
+Pulse level: toggled for each single pulse added.
+
+SIZE <size>
+-----------
+
+This keyword specifies the expected size of the data in the current block in
+bytes. In case of DATA block, the byte used extra bits (see BITS keyword)
+are not included.
+
+In either case, this keyword is printed by pzx2txt only for reference only.
+When encoding, it is ignored and the size is deduced from the block data
+themselves. In case there is mismatch between that size and the size
+specified by this keyword, warning is printed, but the data are processed
+nevertheless.
+
+Blocks this keyword may appear in: DATA, TAG
+
+Pulse level: not affected.
+
+BITS <bits>
+-----------
+
+This keyword specifies how many bits of the last data byte are used. Note
+that both 0 and 8 are treated as if the entire last byte is used. When not
+specified, all bits of the last byte are used.
+
+Blocks this keyword may appear in: DATA
+
+Pulse level: not affected.
+
+BIT0 [pulse] ...
+----------------
+
+This keyword specifies what pulse sequence to use for bit 0 in the data.
+Each use such keyword extends the sequence, which is cleared each time the DATA
+block is finished.
+
+Blocks this keyword may appear in: DATA
+
+Pulse level: not affected.
+
+BIT1 [pulse] ...
+----------------
+
+Like BIT0, but for bit 1.
+
+TAIL <duration>
+---------------
+
+This keyword specifies the duration of the tail pulse for current block.
+When not specified, 0 is used, meaning no tail pulse is generated.
+
+Blocks this keyword may appear in: DATA
+
+Pulse level: not affected.
+
+BODY [data]
+-----------
+
+This keyword provides the bulk content of the current block. Each use of
+such keyword appends more content, which is cleared each time the block is
+complete.
+
+Blocks this keyword may appear in: DATA, TAG
+
+Pulse level: not affected.
+
+BYTE [byte] ...
+---------------
+
+This keyword is like BODY, except that the values are specified and
+processed as 8 bit numbers, not data. This may be used to make the content
+more readable.
+
+Blocks this keyword may appear in: DATA, TAG
+
+Pulse level: not affected.
+
+WORD [word] ...
+---------------
+
+This keyword is like BODY, except that the values are specified and
+processed as 16 bit little endian numbers, not data. This may be used to
+make the content more readable.
+
+Blocks this keyword may appear in: DATA, TAG
+
+Pulse level: not affected.
+
+XOR [initial value]
+-------------------
+
+This keyword may be used to append simple checksum to the block content.
+
+The 8 bit accumulator is initialized with provided initial value, or zero if
+not present, and then updated with exclusive-or of each byte of current block. The
+result is then appended to the block content.
+
+Blocks this keyword may appear in: DATA, TAG
+
+Pulse level: not affected.
+
+ADD [initial value]
+-------------------
+
+Like XOR, except the ADD is used.
+
+Blocks this keyword may appear in: DATA, TAG
+
+Pulse level: not affected.
+
+ADD [initial value]
+-------------------
+
+Like XOR, except that addition is used instead of exclusive-or.
+
+SUB [initial value]
+-------------------
+
+Like XOR, except that subtraction is used instead of exclusive-or.
+
+
+FILTER?

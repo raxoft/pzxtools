@@ -350,14 +350,22 @@ void finish_block( uint & tag, const uint new_tag )
             const word * const pulses = pulse_buffer.get_typed_data< word >() ;
             const uint pulse_count = pulse_buffer.get_data_size() / 2 ;
 
-            if ( ! pzx_pack( pulses, pulse_count, output_level, sequence_limit, sequence_order, tail_cycles ) ) {
+            if ( pzx_pack( pulses, pulse_count, output_level, sequence_limit, sequence_order, 0 ) ) {
+                // Well done.
+            }
+            else if (
+                pulse_count > 0 &&
+                pzx_pack( pulses, pulse_count - 1, output_level, sequence_limit, sequence_order, pulses[ pulse_count - 1 ] )
+            ) {
+                // Well done as well.
+            }
+            else {
                 warn( "packing the pulses is not possible" ) ;
-                pzx_pulses( pulses, pulse_count, output_level, tail_cycles ) ;
+                pzx_pulses( pulses, pulse_count, output_level, 0 ) ;
             }
 
             pulse_buffer.clear() ;
 
-            tail_cycles = 0 ;
             output_level ^= ( pulse_count & 1 ) ;
 
             break ;
@@ -597,7 +605,7 @@ void process_line( uint & last_block_tag, const char * const line )
         }
         case TAG_TAIL:
         {
-            check_tag( tag, last_block_tag, TAG_DATA, TAG_PACK ) ;
+            check_tag( tag, last_block_tag, TAG_DATA ) ;
 
             parse_number( tail_cycles, s, "tail pulse duration", 0xFFFF ) ;
             break ;

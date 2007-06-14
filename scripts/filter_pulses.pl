@@ -14,8 +14,11 @@ loop: while(<>) {
                 next loop ;
             }
         }
+        print ;
+        next ;
+
     }
-    
+
     if ( my( $duration, $a, $b ) = /^FILTER\s+(\d+)\s+(\d+)\s*(\d*)/i ) {
         if ( $b eq "" ) {
             push( @filters, $duration, $duration - $a, $duration + $a ) ;

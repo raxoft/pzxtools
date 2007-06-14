@@ -374,6 +374,3 @@ SUB [initial value]
 -------------------
 
 Like XOR, except that subtraction is used instead of exclusive-or.
-
-
-FILTER?

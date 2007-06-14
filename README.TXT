@@ -14,13 +14,11 @@ tape file to a real machine via sound output. Finally, there are two
 converters which convert the PZX files to and from textual form. These can
 be used to examine the content of a PZX file in a human readable form,
 conveniently edit or create the content of PZX files in any text editor, or
-process or analyze the content by any text processing tool. The suite even
-includes few perl scripts which may be used for the latter.
+process or analyze the content by any text processing tool.
 
 You can find the programs precompiled for Windows platform in the bin/
 directory. The source files themselves are stored in the src/ directory,
 simply cd there and run make to build the programs on Linux/Unix platforms.
-The perl scripts for processing the textual form can be found in scripts/ directory.
 And last but not least, the documentation can be found in the docs/ directory.
 
 Enjoy!

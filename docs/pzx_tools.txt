@@ -25,6 +25,20 @@ The more detailed of each of these tools follows.
 Converting to PZX
 =================
 
+tzx2pzx
+-------
+
+This tool can be used to convert TZX files to PZX. The tool currently
+supports all features of TZX format specification 1.20. In case you are
+interested, see PZX format specification about how each TZX block is mapped
+to PZX. But most likely you don't need to worry about that at all.
+
+Note that in case you would like to adjust something in the resulting PZX,
+like tape file information texts or their encoding, simply use pzx2txt, edit
+whatever you need, then use txt2pzx to convert your edited text back to PZX.
+
+Options: none
+
 tap2pzx
 -------
 
@@ -35,4 +49,91 @@ like to add things which TAP files can't store. This may include things like
 textual information about the tape file itself, specific pause blocks
 between the data blocks, or browse or stop blocks which may help in case of
 multilevel games.
+
+Options:
+
+-p n	Add pause of given duration (specified in ms) after each data block.
+	By default, no pause is added, as most tape files don't need one anyway.
+
+csw2pzx
+-------
+
+This tool can be used to convert CSW files to PZX. The tool currently
+supports both 1.01 and 2.00 CSW files. Note that the resulting file will be
+usually bigger than the original CSW file, but once compressed with an
+archiving program, it may even become smaller than the original.
+
+Options: none
+
+Converting from PZX
+===================
+
+pzx2wav
+-------
+
+This tool can be used to create WAV files from PZX. WAV files are the most
+common format for storing recorded sound, so this tool comes in handyd whenever
+you would need to "play" the tape file for whatever reason. Most often you
+would need it if you want to load it on a real hardware connected to your
+sound card instead of the tape deck.
+
+Options:
+
+-s n	Create the WAV file using given sample rate, specified in Hz.
+	By default, the 44100Hz sample rate is used, which corresponds to CD quality.
+
+Messing up with PZX
+===================
+
+pzx2txt
+-------
+
+This tool can be used to dump content of the PZX files in textual form. This
+is invaluable tool for whoever needs to examine the content of the PZX file
+in human readable form. Also, thanks to the fact that the textual output can
+be converted back to PZX file using txt2pzx, the text form can be easily
+used for reasonably convenient editing of the PZX files, by the means of any
+text editor or any text processing tool.
+
+The output of the tool lists blocks of the original PZX file, each separated
+with empty line. The output should be pretty easy to understand for whoever
+read the PZX format specification, and is in more detail described later.
+
+Options:
+
+-p	Dump the DATA blocks in the same way as PULSE blocks,
+	as a sequence of pulses. This may be useful in case you need to
+	examine/process everything as pulses only. It may be also handy
+	if you want to pack several blocks into one DATA block with the PACK
+	keyword, see description of the text form.
+	By default, the DATA blocks are dumped as DATA blocks.
+
+-a	Dump the ASCII characters stored in DATA blocks as ASCII
+	characters, not hexadecimal numbers, which makes them easily
+	readable in the generated output.
+	By default, everything is dumped as hexadecimal number, which
+	makes it somewhat easier for any data processing.
+
+-x	Dump any 19 byte DATA block in a way which makes it more readable if it
+	was a standard ZX Spectrum header.
+	By default, all DATA blocks are dumped in the same way.
+
+-d	Don't dump the content of the DATA blocks, just their headers.
+	This is useful in case you want just to examine the overall PZX block
+	structure, not the data themselves.
+	By default, the content of the DATA blocks is dumped as well.
+
+-e	Dump each pulse of a PULSE block on its own line. This makes it more
+	friendly to scripts which need to process the pulses in some way.
+	By default, the pulse sequence is dumped in the same way as it was
+	stored in the PULSE block, the duration followed by an optional
+	repeat count.
+	See also the -p option of txt2pzx.
+
+txt2pzx
+-------
+
+This tool can be used to create the PZX files from properly prepared text
+input. Most often the input will be the output of the pzx2txt tool, but it
+may be as well created by hand or by a script.
 

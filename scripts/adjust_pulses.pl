@@ -4,15 +4,16 @@
 
 my @scale = ( 1, 1 ) ;
 my @bias = ( 0, 0 ) ;
-
 my $level = 0 ;
 
 while(<>) {
 
     if ( my( $duration, $count ) = /^PULSE\s+(\d+)\s*(\d*)/i ) {
 
+        $count = 1 if $count eq "" ;
+
         die "please expand pulses with expand_pulses.pl or pzx2txt -e\n"
-            if $count ne "" && $count > 1 && ( $scale[0] != $scale[1] || $bias[0] != $bias[1] ) ;
+            if $count > 1 && ( $scale[0] != $scale[1] || $bias[0] != $bias[1] ) ;
 
         $duration = $duration * $scale[ $level ] + $bias[ $level ] ;
 
@@ -26,9 +27,9 @@ while(<>) {
             $duration = int( $duration ) ;
         }
 
-        print "PULSE $duration $count\n" ;
+        print "PULSE $duration", ( $count > 1 ? " $count" : "" ), "\n" ;
 
-        $level = ! $level ;
+        $level = ! $level if ( $count & 1 ) ;
 
         next ;
     }
@@ -47,11 +48,11 @@ while(<>) {
         next ;
     }
 
-    if ( /^PULSES/ ) {
-        $level = 0 ;
-    }
-    elsif ( /^(PACK|DATA)\s+(\d+)/i ) {
+    if ( /^(DATA|PACK)\s+(\d+)/i ) {
         $level = ( $2 != 0 ) ;
+    }
+    elsif ( /^(PULSES|DATA)/ ) {
+        $level = 0 ;
     }
 
     print ;

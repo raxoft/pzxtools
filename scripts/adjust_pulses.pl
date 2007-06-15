@@ -40,7 +40,7 @@ while(<>) {
         next ;
     }
 
-    if ( my( $a, $b ) = /^BIAS\s*(\d*)\s*(\d*)/i ) {
+    if ( my( $a, $b ) = /^BIAS\s*(-?\d*)\s*(-?\d*)/i ) {
         $a = 0 if $a eq "" ;
         $b = $a if $b eq "" ;
         @bias = ( $a, $b ) ;

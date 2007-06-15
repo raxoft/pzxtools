@@ -8,7 +8,7 @@
  *
  * Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
  *
- * This source code is released under the MIT license, see included LICENSE.TXT.
+ * This source code is released under the MIT license, see included license.txt.
  */
 
 #include "pzx.h"

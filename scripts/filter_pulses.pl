@@ -1,6 +1,6 @@
 #! /usr/bin/perl -wT
 #
-# Map pulse durations in given range to specific value.
+# Map pulse durations in given ranges to specific values.
 
 my @filters ;
 

@@ -17,6 +17,6 @@ while(<>) {
     $total += $count ;
 }
 
-my $average = int( $sum / $total ) ;
+my $average = $total && int( $sum / $total ) ;
 
 print "PULSE $average $total\n" ;

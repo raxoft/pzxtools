@@ -170,6 +170,6 @@ Options:
 History
 =======
 
-1.0 (14.6.2007)
+1.0 (16.6.2007)
 
 + initial release.

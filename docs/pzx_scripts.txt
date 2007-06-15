@@ -14,8 +14,8 @@ The following scripts are currently available.
 expand_pulses.pl
 ----------------
 
-This script expands the  pulses so each pulse is on a separate line, as if
-pzx2txt -e was used in the first place.
+This script expands the pulses so each pulse is output on a separate line,
+as if pzx2txt -e was used in the first place.
 
 Some scripts may require their input expanded in this way.
 
@@ -90,9 +90,76 @@ Example:
 
 	FILTER 855 600 1300	- Map anything within <600,1300> range to 855 T cycles.
 	FILTER 0 100		- Map everything below 100 T cycles to zero.
+	FILTER			- No more filtering.
 
+average_pulses.pl
+-----------------
 
+This script may be used to compute the average duration and total count of
+all pulses encountered. This may be useful for data analysis, as well as
+actual data filtering when used in conjunction with script_filter.pl.
 
+The script simply sums durations and counts of all nonzero pulses and
+discards anything else. The result is then printed as 
+
+PULSE <average> <count>
+
+so it can be directly used for further script processing.
+
+sum_pulses.pl
+-------------
+
+This script may be used to compute the total duration of all pulses
+encountered. This may be useful for data analysis, as well as actual data
+filtering when used in conjunction with script_filter.pl.
+
+The script simply sums durations of all pulses and discards anything else.
+The result is then printed as
+
+PULSE <duration>
+
+so it can be directly used for further script processing.
+
+count_pulses.pl
+---------------
+
+This script may be used to create histogram of durations of all pulses
+encountered. This may be useful for data analysis, in particular for
+discovering what pulse ranges are most often used.
+
+The script simply sums counts for each duration encountered and discards
+anything else. The result is then printed as
+
+PULSE <duration> <count>
+
+for each duration encountered, sorted from shortest to longest duration.
+
+script_filter.pl
+----------------
+
+This script may be used to filter parts of the input through other scripts,
+or, in fact, any other programs. It is extremely powerful tool with
+countless possibilities, but as usual with great power comes great
+responsibility - it will happily execute any command it is told to, so make
+sure you know what input you are running it at.
+
+The script will normally just copy any input to the output, line by line.
+However whenever it encounters a SCRIPT keyword specifying some command, it
+will filter any further input via that command, effectively replacing the
+input with the commands output. It will continue doing so until end of file
+or until it encounters another SCRIPT keyword (with or without command).
+
+Examples:
+
+	SCRIPT average_pulses.pl			- Change duration of following pulses
+							  to their average duration.
+	SCRIPT sum_pulses.pl | sed -e 's/PULSE/PAUSE/'	- Turn the following pulses into pause
+							  of their total duration.
+	SCRIPT count_pulses.pl				- Create histogram of only
+							  the following pulses.
+	SCRIPT cat info.txt				- Replace following input
+							  with content of file info.txt.
+	SCRIPT						- End input of previous command.
 
 History
 =======

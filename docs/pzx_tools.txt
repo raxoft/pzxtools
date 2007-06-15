@@ -75,7 +75,7 @@ pzx2wav
 -------
 
 This tool can be used to create WAV files from PZX. WAV files are the most
-common format for storing recorded sound, so this tool comes in handyd whenever
+common format for storing recorded sound, so this tool comes in handy whenever
 you would need to "play" the tape file for whatever reason. Most often you
 would need it if you want to load it on a real hardware connected to your
 sound card instead of the tape deck.

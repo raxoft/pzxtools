@@ -40,7 +40,7 @@ Block introducing keywords
 The block-introducing keywords are defined below.
 
 Please note that the description of how pulse level is affected refer to the
-internal pulse level maintainted while processing the text form, not how the
+internal pulse level maintained while processing the text form, not how the
 resulting PZX blocks affect the pulse level in the PZX file.
 
 PZX [major.minor]

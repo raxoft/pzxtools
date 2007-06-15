@@ -7,9 +7,9 @@ my @bias = ( 0, 0 ) ;
 
 my $level = 0 ;
 
-loop: while(<>) {
+while(<>) {
 
-    if ( my( $duration, $count ) = /^PULSE\s+(\d+)\s*(\d*)$/i ) {
+    if ( my( $duration, $count ) = /^PULSE\s+(\d+)\s*(\d*)/i ) {
 
         die "please expand pulses with expand_pulses.pl or pzx2txt -e\n"
             if $count ne "" && $count > 1 && ( $scale[0] != $scale[1] || $bias[0] != $bias[1] ) ;

@@ -1,6 +1,6 @@
 #! /usr/bin/perl -wT
 #
-# Create histogram of pulse durations used.
+# Create histogram of pulse durations encountered.
 
 my %stats ;
 

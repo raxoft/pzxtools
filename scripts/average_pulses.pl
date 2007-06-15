@@ -13,7 +13,7 @@ while(<>) {
 
     $count = 1 if $count eq "" ;
 
-    $sum += $duration ;
+    $sum += $duration * $count ;
     $total += $count ;
 }
 

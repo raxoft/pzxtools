@@ -1,6 +1,10 @@
 #! /usr/bin/perl -wT
 #
 # Adjust pulse pulse durations by given scale factor and bias.
+#
+# Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+#
+# This source code is released under the MIT license, see included license.txt.
 
 my @scale = ( 1, 1 ) ;
 my @bias = ( 0, 0 ) ;

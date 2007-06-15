@@ -3,6 +3,10 @@
 # Expand repeated pulses, so each pulse is on a separate line.
 #
 # This is the same as if pzx2txt -e was used in the first place.
+#
+# Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+#
+# This source code is released under the MIT license, see included license.txt.
 
 while(<>) {
 

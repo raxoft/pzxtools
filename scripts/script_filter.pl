@@ -1,6 +1,10 @@
 #! /usr/bin/perl -w
 #
 # Filter the blocks of input through other scripts.
+#
+# Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+#
+# This source code is released under the MIT license, see included license.txt.
 
 use IPC::Open3 ;
 

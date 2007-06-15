@@ -1,6 +1,10 @@
 #! /usr/bin/perl -wT
 #
 # Map pulse durations in given ranges to specific values.
+#
+# Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+#
+# This source code is released under the MIT license, see included license.txt.
 
 my @filters ;
 

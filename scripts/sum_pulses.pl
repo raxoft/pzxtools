@@ -1,6 +1,10 @@
 #! /usr/bin/perl -wT
 #
 # Compute total duration of pulses encountered.
+#
+# Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+#
+# This source code is released under the MIT license, see included license.txt.
 
 my $sum = 0 ;
 

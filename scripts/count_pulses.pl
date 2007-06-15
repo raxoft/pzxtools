@@ -1,6 +1,10 @@
 #! /usr/bin/perl -wT
 #
 # Create histogram of pulse durations encountered.
+#
+# Copyright (C) 2007 Patrik Rak (patrik@raxoft.cz)
+#
+# This source code is released under the MIT license, see included license.txt.
 
 my %stats ;
 

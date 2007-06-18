@@ -198,9 +198,10 @@ void tzx_render_data(
 
         // Adjust the current output level according to the last bit output.
 
-        const uint last_byte = data[ bit_count / 8 ] ;
-        const uint last_bit = ( last_byte >> ( bit_count & 7 ) ) ;
-        level = ( ( ( last_bit & 1 ) != 0 ) ? final_level_1 : final_level_0 ) ;
+        const uint bit_index = ( bit_count - 1 ) ;
+        const uint bit_mask = ( 0x80 >> ( bit_index & 7 ) ) ;
+        const uint last_byte = data[ bit_index / 8 ] ;
+        level = ( ( ( last_byte & bit_mask ) != 0 ) ? final_level_1 : final_level_0 ) ;
     }
 
     // Now if there was some pause specified, output it as well.

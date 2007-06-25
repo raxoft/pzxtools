@@ -11,6 +11,10 @@
 #ifndef DEBUG_H
 #define DEBUG_H 1
 
+#ifndef SYSDEFS_H
+#include "sysdefs.h"
+#endif
+
 #include <cstdlib>
 #include <cstdio>
 

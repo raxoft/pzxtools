@@ -19,12 +19,12 @@
 
 // PZX version we support.
 
-const byte PZX_MAJOR = 0 ;
-const byte PZX_MINOR = 3 ;
+const byte PZX_MAJOR = 1 ;
+const byte PZX_MINOR = 0 ;
 
 // PZX block tags.
 
-const uint PZX_HEADER   = TAG_NAME('Z','X','T','P') ;
+const uint PZX_HEADER   = TAG_NAME('P','Z','X','T') ;
 const uint PZX_PULSES   = TAG_NAME('P','U','L','S') ;
 const uint PZX_DATA     = TAG_NAME('D','A','T','A') ;
 const uint PZX_PAUSE    = TAG_NAME('P','A','U','S') ;

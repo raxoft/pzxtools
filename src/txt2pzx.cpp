@@ -802,9 +802,7 @@ int main( int argc, char * * argv )
 {
     // Make sure the standard output is in binary mode.
 
-#ifdef _MSC_VER
-    _setmode( _fileno( stdout ), _O_BINARY ) ;
-#endif
+    set_binary_mode( stdout ) ;
 
     // Parse the command line.
 

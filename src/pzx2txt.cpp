@@ -481,9 +481,7 @@ int main( int argc, char * * argv )
 {
     // Make sure the standard input is in binary mode.
 
-#ifdef _MSC_VER
-    _setmode( _fileno( stdin ), _O_BINARY ) ;
-#endif
+    set_binary_mode( stdin ) ;
 
     // Parse the command line.
 

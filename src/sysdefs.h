@@ -14,10 +14,9 @@
 #ifdef _MSC_VER
 #include <io.h>
 #include <fcntl.h>
-#define set_binary_mode(x)  _setmode( _fileno( stdin ), _O_BINARY ) ;
+#define set_binary_mode(file)   _setmode( _fileno( file ), _O_BINARY )
 #else
-#define set_binary_mode(x)
+#define set_binary_mode(file)
 #endif
 
 #endif // SYSDEFS_H
-

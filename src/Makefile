@@ -59,6 +59,8 @@ buffer.h : debug.h endian.h
 	$(TOUCH) $@
 csw.h : buffer.h
 	$(TOUCH) $@
+debug.h : sysdefs.h
+	$(TOUCH) $@
 endian.h : types.h
 	$(TOUCH) $@
 pzx.h : buffer.h

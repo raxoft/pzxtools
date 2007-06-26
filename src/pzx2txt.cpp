@@ -197,7 +197,7 @@ void dump_data( FILE * const output_file, const byte * data, uint data_size, con
         return ;
     }
 
-    const uint limit = 48 ;
+    const uint limit = 32 ;
     while ( data_size > limit ) {
         dump_data_line( output_file, data, limit, dump_ascii ) ;
         data += limit ;
@@ -432,6 +432,9 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
         case PZX_HEADER: {
             const uint major = GET1() ;
             const uint minor = GET1() ;
+            if ( major != PZX_MAJOR ) {
+                fail( "unsupported PZX version %u.%u", major, minor ) ;
+            }
             fprintf( output_file, "PZX %u.%u\n", major, minor ) ;
             dump_strings( output_file, "INFO", data, data_size ) ;
             return ;

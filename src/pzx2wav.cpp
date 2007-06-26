@@ -215,6 +215,14 @@ void render_block( const uint tag, const byte * data, uint data_size )
     hope( data ) ;
 
     switch ( tag ) {
+        case PZX_HEADER: {
+            const uint major = GET1() ;
+            const uint minor = GET1() ;
+            if ( major != PZX_MAJOR ) {
+                fail( "unsupported PZX version %u.%u", major, minor ) ;
+            }
+            break ;
+        }
         case PZX_PULSES: {
             render_pulse_block( data, data_size ) ;
             break ;

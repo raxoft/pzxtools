@@ -46,7 +46,7 @@ resulting PZX blocks affect the pulse level in the PZX file.
 PZX [major.minor]
 -----------------
 
-This keyword introduces the PZX ZXTP header block.
+This keyword introduces the PZX header block.
 
 The major and minor version numbers are printed only for reference by
 pzx2txt and are entirely ignored when encoding.

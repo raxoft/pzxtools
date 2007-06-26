@@ -281,7 +281,7 @@ int main( int argc, char * * argv )
                 // Fall through.
             }
             case 'h': {
-                fprintf( stderr, "usage: pzx2txt [-a|-d] [-o output_file] [input_file]\n" ) ;
+                fprintf( stderr, "usage: pzx2wav [-s n] [-o output_file] [input_file]\n" ) ;
                 fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
                 fprintf( stderr, "-s n   use given sample rate instead of default %uHz\n", default_sample_rate ) ;
                 return EXIT_FAILURE ;

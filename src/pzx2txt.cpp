@@ -533,7 +533,7 @@ int main( int argc, char * * argv )
                 // Fall through.
             }
             case 'h': {
-                fprintf( stderr, "usage: pzx2txt [-a|-d] [-o output_file] [input_file]\n" ) ;
+                fprintf( stderr, "usage: pzx2txt [-p|-a|-x|-d|-e] [-o output_file] [input_file]\n" ) ;
                 fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
                 fprintf( stderr, "-p     dump bytes in data blocks as pulses\n" ) ;
                 fprintf( stderr, "-a     dump bytes in data blocks as ASCII characters when possible\n" ) ;

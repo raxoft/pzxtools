@@ -1,4 +1,4 @@
-#! /usr/bin/perl -wT
+#! /usr/bin/perl -w
 #
 # Create histogram of pulse durations encountered.
 #

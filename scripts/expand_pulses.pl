@@ -1,4 +1,4 @@
-#! /usr/bin/perl -wT
+#! /usr/bin/perl -w
 #
 # Expand repeated pulses, so each pulse is on a separate line.
 #

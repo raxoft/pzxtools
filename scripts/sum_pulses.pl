@@ -1,4 +1,4 @@
-#! /usr/bin/perl -wT
+#! /usr/bin/perl -w
 #
 # Compute total duration of pulses encountered.
 #

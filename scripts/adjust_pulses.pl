@@ -1,4 +1,4 @@
-#! /usr/bin/perl -wT
+#! /usr/bin/perl -w
 #
 # Adjust pulse pulse durations by given scale factor and bias.
 #

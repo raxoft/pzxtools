@@ -1,5 +1,5 @@
-PZX (Pure ZX Tape) file format version 0.3 draft
-================================================
+PZX (Perfect ZX Tape) file format version 1.0
+=============================================
 
 The PZX file format consists of a sequence of blocks. Each block has the
 following uniform structure:
@@ -25,10 +25,12 @@ set to zero by encoding implementations and ignored by decoding implementations.
 All strings specified by this format are stored in UTF-8 encoding. However
 implementations are not required to render Unicode data at all. Any
 implementation may choose to render only the characters it understands and
-replace the rest with a question mark character. For example an
-implementation which understands ASCII characters only may render only those
-ASCII characters in the 32-126 range it understands. Also note that the
-minimal compliant implementation is not required to render any strings at all.
+replace the rest with either a question mark character, or distinctive
+hexadecimal representation of the character, whatever the implementor prefers.
+For example an implementation which understands ASCII characters only may
+render only those ASCII characters in the 32-126 range it understands. Also
+note that the minimal compliant implementation is not required to render any
+strings at all.
 
 The sole purpose of the format is to encode sequence of pulses of certain duration.
 Pulse level is defined to be either low or high. When loading, low level
@@ -43,9 +45,9 @@ to invert that initial level and invert the level before each pulse, if it
 makes them easier to implement. All that matters is that the level of the
 pulses themselves remain the same.
 
-Any durations are expressed in T cycles of standard 48k Spectrum. This means
+Any durations are expressed in T cycles of standard 48k Spectrum CPU. This means
 one T cycle equals 1/3500000 second. It's up to an implementation to convert
-the durations appropriatelly if it may not or does not want to use the T cycles directly.
+the durations appropriately if it may not or does not want to use the T cycles directly.
 However note that this is not necessary in case of 128k emulation. In that
 case the CPU speed is not substantially different and the ROM I/O routines
 use the same timing constants anyway, so an implementation may safely use
@@ -63,7 +65,7 @@ Blocks
 ------
 
 There are four mandatory block types which any implementation must implement in order
-to claim PZX compatibility, namely ZXTP, PULS, DATA and PAUS blocks. All
+to claim PZX compatibility, namely PZXT, PULS, DATA and PAUS blocks. All
 other block types may be safely ignored, although implementors are welcome
 to implement them as they see fit. However whenever an implementation
 encounters a block it doesn't understand, it must skip it and continue as if
@@ -84,11 +86,11 @@ lowercase tag names, while any standardized blocks use uppercase tag names.
 
 The core blocks which must be supported are:
 
-ZXTP - PZX header block
+PZXT - PZX header block
 -----------------------
 
-0 u8 major - major version number (currently 0 - draft version).
-1 u8 minor - minor version number (currently 3).
+0 u8 major - major version number (currently 1).
+1 u8 minor - minor version number (currently 0).
 2 u8[?] info - tape info, see below.
 
 This block distinguishes the PZX files from other files and may provide
@@ -101,10 +103,6 @@ implementation should accept only files whose major version it implements
 and reject anything else. However an implementation may report a warning in
 case it encounters minor greater than it implements for given major, if the
 implementor finds it convenient to do so.
-
-DRAFT ONLY: The above applies once the major becomes at least 1. For
-draft testing implementations, the major version must be 0 and minor must
-match the minor of the tested draft. Anything else must be rejected.
 
 Note that this block also allows for simple concatenation of PZX files. Any
 implementation should thus check the version number not only in case of the
@@ -153,12 +151,12 @@ necessary to specify the Language field in case all texts are in English.
 PULS - Pulse sequence
 ---------------------
 
-0 u16? count - bits 0-14 optional (see bit 15) repeat count, always greater than zero
-               bit 15 repeat count present: 0 not present 1 present
+0 u16 count - bits 0-14 optional (see bit 15) repeat count, always greater than zero
+              bit 15 repeat count present: 0 not present 1 present
 2 u16 duration1 - bits 0-14 low/high (see bit 15) pulse duration bits
-                  bit 15 duration encoding: 0 high:0 low:duration1 1 high:duration1 low:duration2
-4 u16? duration2 - optional (see bit 15 of duration1) low bits of pulse duration
-... dtto repeated until the end of the block
+                  bit 15 duration encoding: 0 duration1 1 ((duration1<<16)+duration2)
+4 u16 duration2 - optional (see bit 15 of duration1) low bits of pulse duration
+... ditto repeated until the end of the block
 
 This block is used to represent arbitrary sequence of pulses. The sequence
 consists of pulses of given duration, with each pulse optionally repeated
@@ -212,9 +210,14 @@ The standard pilot tone of Spectrum data block (leader >= 128) would be:
 
 0x8000+3223,2168,667,735
 
-Note that no matter how many pilot pulses there are, in case of standard
-pilot tone the first sync pulse should be high and the other pulse low,
-otherwise some loaders might not work properly.
+For the record, the standard ROM save routines create the pilot tone in such
+a way that the level of the first sync pulse is high and the level of the
+second sync pulse is low. The bit pulses then follow, each bit starting with
+high pulse. The creators of the PZX files should use this information to
+determine if they got the polarity of their files right. Note that although
+most loaders are not polarity sensitive and would work even if the polarity
+is inverted, there are some loaders which won't, so it is better to always
+stick to this scheme.
 
 DATA - Data block
 -----------------
@@ -235,9 +238,10 @@ is 0 and s1 if its value is 1, respectively. Each sequence consists of
 pulses of specified durations, p0 pulses for sequence s0 and p1 pulses for
 sequence s1, respectively.
 
-The initial pulse level is specified by bit 31 of the count field. For standard
-ROM routines, it should be always set to high. Also note that pulse of zero
-duration may be used to invert the level at start and/or the end of the
+The initial pulse level is specified by bit 31 of the count field. For data
+saved with standard ROM routines, it should be always set to high, as
+mentioned in PULS description above. Also note that pulse of zero duration
+may be used to invert the pulse level at start and/or the end of the
 sequence. It would be also possible to use it for pulses longer than 65535 T
 cycles in the middle of the sequence, if it was ever necessary.
 
@@ -281,18 +285,18 @@ PAUS - Pause
 This block may be used to produce pauses during which the pulse level is not
 particularly important. The pause consists of pulse of given duration and
 given level. However note that some emulators may choose to simulate random
-noise during this period, ocasionally toggling the pulse level. In such case
+noise during this period, occasionally toggling the pulse level. In such case
 the level must not be toggled during the first 70000 T cycles and then more
-than twice during each 70000 T cycles.
+than once during each 70000 T cycles.
 
 For example, in case of ZX Spectrum program saved by standard SAVE command
 there is a low pulse of about one second (49-50 frames) between the header
 and data blocks. On the other hand, there is usually no pause between the
 blocks necessary at all, as long as the tail pulse of the preceding block was
-set properly.
+used properly.
 
 
-Additonal blocks which should be supported:
+Additional blocks which should be supported:
 
 BRWS - Browse point
 -------------------
@@ -304,9 +308,9 @@ as target for tape browsing. The text is the single line describing this
 target.
 
 If an implementation supports tape browsing, it should implement a mode in
-which it allows jumping to ZXTP or BRWS blocks only. These blocks are the
+which it allows jumping to PZXT or BRWS blocks only. These blocks are the
 reasonable points to which jumping makes sense, and both provide descriptive
-name of that point. In case of the ZXTP block it is the tape title (or "Tape
+name of that point. In case of the PZXT block it is the tape title (or "Tape
 start" if no name is specified) and in case of BRWS block it is the the
 description of that browse point. An implementation may choose to also
 implement a mode in which it allows jumping to arbitrary blocks as well. In
@@ -317,7 +321,7 @@ from the block itself as it sees fit.
 Creators of the PZX files are urged to put the BRWS blocks to wherever it makes
 sense. They are often not needed, but they should be inserted prior any
 level data block to which a user might eventually need to fast forward or
-rewind to, together with appropriatelly descriptive name.
+rewind to, together with appropriately descriptive name.
 
 STOP - Stop tape command
 ------------------------
@@ -332,7 +336,7 @@ Other values are not defined yet, however for future compatibility, any
 implementation should treat any value it doesn't understand as 0.
 
 Creators of the PZX files are urged to put these blocks to whichever position the program
-asks the user to stop the tape at, and use the flags field appropriatelly to
+asks the user to stop the tape at, and use the flags field appropriately to
 the situation as well.
 
 
@@ -444,10 +448,13 @@ Not needed, every block defines pulse levels regardless of other blocks.
 
 ID 30 - Text description
 
-Included as part of ZXTP block.
+Encoded as BRWS block.
+
+ID 32 - Archive info
+
+Included as part of PZXT block.
 
 ID 31 - Message block
-ID 32 - Archive info
 ID 33 - Hardware type
 ID 35 - Custom info block
 
@@ -456,12 +463,16 @@ via custom blocks if anyone really has some use for them.
 
 ID 5A - "Glue" block (90 dec, ASCII Letter 'Z')
 
-Not exactly needed, although ZXTP block may be used in the same way as well.
+Not exactly needed, although PZXT block may be used in the same way as well.
 
 
 
 History
 =======
+
+1.0 (28.6.2007)
+
+* Changed ZXTP tag to PZXT to eliminate any possible problems with draft implementations.
 
 0.3 draft (20.5.2007)
 

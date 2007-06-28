@@ -57,8 +57,8 @@ Pulse level: not affected.
 
 Example:
 
-	PZX 1.0
-	INFO "Test tape file"
+        PZX 1.0
+        INFO "Test tape file"
 
 PULSES
 ------
@@ -73,10 +73,10 @@ Pulse level: always set to low.
 
 Example:
 
-	PULSES
-	PULSE 2168 8063
-	PULSE 667
-	PULSE 735
+        PULSES
+        PULSE 2168 8063
+        PULSE 667
+        PULSE 735
 
 DATA [pulse level]
 ------------------
@@ -95,15 +95,15 @@ Pulse level: always set to low.
 
 Example:
 
-	DATA
-	SIZE 19
-	TAIL 945
-	BIT0 855 855
-	BIT1 1710 1710
-	BYTE 0 0
-	BODY .T.E.S.T. .T.A.P.E.
-	WORD 1234 10 1234
-	XOR
+        DATA
+        SIZE 19
+        TAIL 945
+        BIT0 855 855
+        BIT1 1710 1710
+        BYTE 0 0
+        BODY .T.E.S.T. .T.A.P.E.
+        WORD 1234 10 1234
+        XOR
 
 PACK [pulse level] [sequence limit] [sequence order]
 ----------------------------------------------------
@@ -137,12 +137,12 @@ Pulse level: may be forced, see above.
 
 Example:
 
-	PACK
-	PULSE 855 4
-	PULSE 1710 2
-	PULSE 855 2
-	PULSE 1710 8
-	PULSE 945
+        PACK
+        PULSE 855 4
+        PULSE 1710 2
+        PULSE 855 2
+        PULSE 1710 8
+        PULSE 945
 
 PAUSE <duration> [pulse level]
 ------------------------------
@@ -160,8 +160,8 @@ Pulse level: always forced, see above.
 
 Example:
 
-	PAUSE 3500000
-	PAUSE 3500 1
+        PAUSE 3500000
+        PAUSE 3500 1
 
 STOP [flags]
 ------------
@@ -181,8 +181,8 @@ Pulse level: not affected.
 
 Example:
 
-	STOP
-	STOP 1
+        STOP
+        STOP 1
 
 BROWSE <"string">
 -----------------
@@ -198,7 +198,7 @@ Pulse level: not affected.
 
 Example:
 
-	BROWSE "Level 1"
+        BROWSE "Level 1"
 
 TAG <tag name>
 --------------
@@ -216,8 +216,8 @@ Pulse level: not affected.
 
 Example:
 
-	TAG wtfk
-	BODY FF001234
+        TAG wtfk
+        BODY FF001234
 
 
 Block content keywords

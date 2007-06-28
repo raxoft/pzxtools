@@ -19,7 +19,7 @@ as if pzx2txt -e was used in the first place.
 
 Some scripts may require their input expanded in this way.
 
-adjust_pulses.pl	
+adjust_pulses.pl        
 ----------------
 
 This script may be used to adjust pulse durations by specified scale factor
@@ -49,13 +49,13 @@ nor b is present, both biases are set to 0.
 
 Example:
 
-	SCALE 0.9 1.1	- Fix effect of sampling threshold biased towards high pulses.
-	SCALE 2		- Make every pulse twice as long.
-	SCALE		- No more scaling.
+        SCALE 0.9 1.1   - Fix effect of sampling threshold biased towards high pulses.
+        SCALE 2         - Make every pulse twice as long.
+        SCALE           - No more scaling.
 
-	BIAS 0 855	- Make every high pulse 855 T cycles longer.
-	BIAS -10	- Make every pulse 10 T cycles shorter.
-	BIAS		- No more biasing.
+        BIAS 0 855      - Make every high pulse 855 T cycles longer.
+        BIAS -10        - Make every pulse 10 T cycles shorter.
+        BIAS            - No more biasing.
 
 filter_pulses.pl
 ----------------
@@ -88,9 +88,9 @@ Reset the range list.
 
 Example:
 
-	FILTER 855 600 1300	- Map anything within <600,1300> range to 855 T cycles.
-	FILTER 0 100		- Map everything below 100 T cycles to zero.
-	FILTER			- No more filtering.
+        FILTER 855 600 1300     - Map anything within <600,1300> range to 855 T cycles.
+        FILTER 0 100            - Map everything below 100 T cycles to zero.
+        FILTER                  - No more filtering.
 
 average_pulses.pl
 -----------------
@@ -151,15 +151,15 @@ or until it encounters another SCRIPT keyword (with or without command).
 
 Examples:
 
-	SCRIPT average_pulses.pl			- Change duration of following pulses
-							  to their average duration.
-	SCRIPT sum_pulses.pl | sed -e 's/PULSE/PAUSE/'	- Turn the following pulses into pause
-							  of their total duration.
-	SCRIPT count_pulses.pl				- Create histogram of only
-							  the following pulses.
-	SCRIPT cat info.txt				- Replace following input
-							  with content of file info.txt.
-	SCRIPT						- End input of previous command.
+        SCRIPT average_pulses.pl                        - Change duration of following pulses
+                                                          to their average duration.
+        SCRIPT sum_pulses.pl | sed -e 's/PULSE/PAUSE/'  - Turn the following pulses into pause
+                                                          of their total duration.
+        SCRIPT count_pulses.pl                          - Create histogram of only
+                                                          the following pulses.
+        SCRIPT cat info.txt                             - Replace following input
+                                                          with content of file info.txt.
+        SCRIPT                                          - End input of previous command.
 
 History
 =======

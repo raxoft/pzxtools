@@ -12,8 +12,8 @@ The purpose of each tool should easy to guess from its name, however here is
 the list to make it clear:
 
 tzx2pzx - convert TZX files to PZX files.
-tap2pzx	- convert TAP files to PZX files.
-csw2pzx	- convert CSW files to PZX files.
+tap2pzx - convert TAP files to PZX files.
+csw2pzx - convert CSW files to PZX files.
 
 pzx2wav - convert PZX files to WAV files.
 
@@ -53,9 +53,9 @@ multilevel games.
 
 Options:
 
--p n	Add pause of given duration (specified in ms) after each data block.
+-p n    Add pause of given duration (specified in ms) after each data block.
 
-	By default, no pause is added, as most tape files don't need one anyway.
+        By default, no pause is added, as most tape files don't need one anyway.
 
 csw2pzx
 -------
@@ -82,9 +82,9 @@ sound card instead of the tape deck.
 
 Options:
 
--s n	Create the WAV file using given sample rate, specified in Hz.
+-s n    Create the WAV file using given sample rate, specified in Hz.
 
-	By default, the 44100Hz sample rate is used, which corresponds to CD quality.
+        By default, the 44100Hz sample rate is used, which corresponds to CD quality.
 
 
 Messing up with PZX
@@ -106,41 +106,41 @@ specification, and is in more detail described in PZX text format specification.
 
 Options:
 
--p	Dump the DATA blocks in the same way as PULSE blocks,
-	as a sequence of pulses. This may be useful in case you need to
-	examine/process everything as pulses only. It may be also handy
-	if you want to pack several blocks into one DATA block with the PACK
-	keyword, see PZX text format specification.
+-p      Dump the DATA blocks in the same way as PULSE blocks,
+        as a sequence of pulses. This may be useful in case you need to
+        examine/process everything as pulses only. It may be also handy
+        if you want to pack several blocks into one DATA block with the PACK
+        keyword, see PZX text format specification.
 
-	By default, the DATA blocks are dumped as DATA blocks.
+        By default, the DATA blocks are dumped as DATA blocks.
 
--a	Dump the ASCII characters stored in DATA blocks as ASCII
-	characters, not hexadecimal numbers, which makes them easily
-	readable in the generated output.
+-a      Dump the ASCII characters stored in DATA blocks as ASCII
+        characters, not hexadecimal numbers, which makes them easily
+        readable in the generated output.
 
-	By default, everything is dumped as hexadecimal number, which
-	makes it somewhat easier for any data processing.
+        By default, everything is dumped as hexadecimal number, which
+        makes it somewhat easier for any data processing.
 
--x	Dump any 19 byte DATA block in a way which makes it more readable if it
-	was a standard ZX Spectrum header.
+-x      Dump any 19 byte DATA block in a way which makes it more readable if it
+        was a standard ZX Spectrum header.
 
-	By default, all DATA blocks are dumped in the same way.
+        By default, all DATA blocks are dumped in the same way.
 
--d	Don't dump the content of the DATA blocks, just their headers.
-	This is useful in case you want just to examine the overall PZX block
-	structure, not the data themselves.
+-d      Don't dump the content of the DATA blocks, just their headers.
+        This is useful in case you want just to examine the overall PZX block
+        structure, not the data themselves.
 
-	By default, the content of the DATA blocks is dumped as well.
+        By default, the content of the DATA blocks is dumped as well.
 
--e	Expand the pulses, dumping each pulse of a PULSE block on its own line.
-	This makes it more friendly to scripts which need to process the
-	pulses in some way.
+-e      Expand the pulses, dumping each pulse of a PULSE block on its own line.
+        This makes it more friendly to scripts which need to process the
+        pulses in some way.
 
-	By default, the pulse sequence is dumped in the same way as it was
-	stored in the PULSE block, the duration followed by an optional
-	repeat count.
+        By default, the pulse sequence is dumped in the same way as it was
+        stored in the PULSE block, the duration followed by an optional
+        repeat count.
 
-	See also the -p option of txt2pzx.
+        See also the -p option of txt2pzx.
 
 txt2pzx
 -------
@@ -157,14 +157,14 @@ to make sure the output really contains the intended input.
 
 Options:
 
--p	When creating PULSE blocks, store the pulses exactly as the are
-	specified in the input file. This is useful mostly for developers
-	who may need to prepare specific pulse sequences for testing purposes.
+-p      When creating PULSE blocks, store the pulses exactly as the are
+        specified in the input file. This is useful mostly for developers
+        who may need to prepare specific pulse sequences for testing purposes.
 
-	By default, PULSE block boundaries are ignored and pulses themselves
-	are merged together whenever possible.
+        By default, PULSE block boundaries are ignored and pulses themselves
+        are merged together whenever possible.
 
-	See also the -e option of pzx2txt.
+        See also the -e option of pzx2txt.
 
 
 History

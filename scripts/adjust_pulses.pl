@@ -33,7 +33,7 @@ while(<>) {
 
         print "PULSE $duration", ( $count > 1 ? " $count" : "" ), "\n" ;
 
-        $level = ! $level if ( $count & 1 ) ;
+        $level ^= ( $count & 1 ) ;
 
         next ;
     }

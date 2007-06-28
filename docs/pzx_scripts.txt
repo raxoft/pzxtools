@@ -9,7 +9,7 @@ See PZX text format specification for more details about the format itself.
 The scripts themselves are simple perl scripts which read the input from
 standard input and write the output to standard output.
 
-The following scripts are currently available.
+The following scripts are currently available:
 
 expand_pulses.pl
 ----------------

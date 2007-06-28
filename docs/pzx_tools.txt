@@ -159,7 +159,7 @@ Options:
 
 -p	When creating PULSE blocks, store the pulses exactly as the are
 	specified in the input file. This is useful mostly for developers
-	who may need to prepare specific pulse sequences.
+	who may need to prepare specific pulse sequences for testing purposes.
 
 	By default, PULSE block boundaries are ignored and pulses themselves
 	are merged together whenever possible.

@@ -89,7 +89,7 @@ convert the octets to pulses.
 The optional pulse level may be used to specify the initial pulse level of
 the DATA block. When not present, the current pulse level is used.
 
-Keywords this block may contain: SIZE, BITS, BIT0, BIT1, TAIL, BODY, BYTE, WORD, XOR, ADD, SUM
+Keywords this block may contain: SIZE, BITS, BIT0, BIT1, TAIL, BODY, BYTE, WORD, XOR, ADD, SUB
 
 Pulse level: always set to low.
 
@@ -210,7 +210,7 @@ The block itself consists of an opaque sequence of octets.
 The tag name is the tag used for the PZX block. It must consists of exactly
 four ASCII characters.
 
-Keywords this block may contain: SIZE, BODY, BYTE, WORD, XOR, ADD, SUM
+Keywords this block may contain: SIZE, BODY, BYTE, WORD, XOR, ADD, SUB
 
 Pulse level: not affected.
 
@@ -353,15 +353,6 @@ This keyword may be used to append simple checksum to the block content.
 The 8 bit accumulator is initialized with provided initial value, or zero if
 not present, and then updated with exclusive-or of each byte of current block. The
 result is then appended to the block content.
-
-Blocks this keyword may appear in: DATA, TAG
-
-Pulse level: not affected.
-
-ADD [initial value]
--------------------
-
-Like XOR, except the ADD is used.
 
 Blocks this keyword may appear in: DATA, TAG
 

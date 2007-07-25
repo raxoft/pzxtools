@@ -146,7 +146,7 @@ sure you know what input you are running it at.
 The script will normally just copy any input to the output, line by line.
 However whenever it encounters a SCRIPT keyword specifying some command, it
 will filter any further input via that command, effectively replacing the
-input with the commands output. It will continue doing so until end of file
+input with the command's output. It will continue doing so until end of file
 or until it encounters another SCRIPT keyword (with or without command).
 
 Examples:

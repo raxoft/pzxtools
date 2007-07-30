@@ -35,8 +35,8 @@ uint sample_denominator ;
  * Duration and value of the last sample accumulated so far, both scaled by sample_numerator.
  */
 //@{
-uquad sample_value ;
-uquad sample_duration ;
+uint sample_value ;
+uint sample_duration ;
 //@}
 
 }
@@ -49,8 +49,8 @@ void wav_out( const uint duration, const bool level )
     // Compute how much time has passed and how much is there left
     // until the next sample starts.
 
-    uquad time_passed = ( duration * sample_numerator ) ;
-    const uquad time_left = ( sample_denominator - sample_duration ) ;
+    uquad time_passed = ( uquad( duration ) * sample_numerator ) ;
+    const uint time_left = ( sample_denominator - sample_duration ) ;
 
     // If we have finished current sample, output it now.
 
@@ -65,7 +65,7 @@ void wav_out( const uint duration, const bool level )
 
         // Output the sample.
 
-        sample_buffer.write< u8 >( 255u * sample_value / sample_denominator ) ;
+        sample_buffer.write< u8 >( 255ull * sample_value / sample_denominator ) ;
 
         // Prepare for next sample.
 
@@ -82,9 +82,9 @@ void wav_out( const uint duration, const bool level )
 
     // Finally, accumulate the remainer for the next sample.
 
-    sample_duration += time_passed ;
+    sample_duration += uint( time_passed ) ;
     if ( level ) {
-        sample_value += time_passed ;
+        sample_value += uint( time_passed ) ;
     }
 }
 
@@ -96,7 +96,7 @@ void wav_flush( void )
     // Store the remaining sample.
 
     if ( sample_duration > 0 ) {
-        sample_buffer.write< u8 >( 255u * sample_value / sample_denominator ) ;
+        sample_buffer.write< u8 >( 255ull * sample_value / sample_denominator ) ;
 
         sample_value = 0 ;
         sample_duration = 0 ;

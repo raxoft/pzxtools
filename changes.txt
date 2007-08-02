@@ -1,0 +1,8 @@
+1.0 rc 2 (2.8.2007)
+
+* Fixed overflow bug in WAV generation, which caused pzx2wav render
+  all pauses as very short ones.
+
+1.0 rc 1 (28.6.2007)
+
++ First release.

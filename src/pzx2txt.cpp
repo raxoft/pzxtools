@@ -435,7 +435,7 @@ void dump_block( FILE * const output_file, const uint tag, const byte * data, ui
             if ( major != PZX_MAJOR ) {
                 fail( "unsupported PZX major version %u.%u - stopping", major, minor ) ;
             }
-            if ( minor != PZX_MINOR ) {
+            if ( minor > PZX_MINOR ) {
                 warn( "unsupported PZX minor version %u.%u - proceeding", major, minor ) ;
             }
             fprintf( output_file, "PZX %u.%u\n", major, minor ) ;

@@ -221,7 +221,7 @@ void render_block( const uint tag, const byte * data, uint data_size )
             if ( major != PZX_MAJOR ) {
                 fail( "unsupported PZX major version %u.%u - stopping", major, minor ) ;
             }
-            if ( minor != PZX_MINOR ) {
+            if ( minor > PZX_MINOR ) {
                 warn( "unsupported PZX minor version %u.%u - proceeding", major, minor ) ;
             }
             break ;

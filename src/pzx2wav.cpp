@@ -275,7 +275,11 @@ int main( int argc, char * * argv )
                 break ;
             }
             case 's': {
-                option_sample_rate = uint( atoi( argv[ ++i ] ) ) ;
+                const char * const arg = argv[ ++i ] ;
+                if ( arg == NULL ) {
+                    fail( "missing sample rate" ) ;
+                }
+                option_sample_rate = uint( atoi( arg ) ) ;
                 break ;
             }
             default: {

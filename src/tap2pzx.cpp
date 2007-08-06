@@ -56,7 +56,11 @@ int main( int argc, char * * argv )
                 break ;
             }
             case 'p': {
-                const uint value = uint( atoi( argv[ ++i ] ) ) ;
+                const char * const arg = argv[ ++i ] ;
+                if ( arg == NULL ) {
+                    fail( "missing pause duration" ) ;
+                }
+                const uint value = uint( atoi( arg ) ) ;
                 if ( value > 10 * 60 * 1000 ) {
                     fail( "pause duration %ums is out of range", value ) ;
                 }

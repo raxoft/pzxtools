@@ -25,10 +25,9 @@ while(<>) {
 
     if ( my( $script ) = /^SCRIPT\s*(.*?)\s*$/i ) {
         if ( $script ne "" ) {
-            $SIG{__WARN__} = sub {}  ;
+            local $SIG{__WARN__} = sub {}  ;
             $pid = eval { return open3( \*PIPE, ">&1", ">&2", $script ) }
                 or die "error: unable to run \"$script\"\n" ;
-            $SIG{__WARN__} = "DEFAULT" ;
         }
         next ;
     }

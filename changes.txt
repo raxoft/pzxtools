@@ -1,3 +1,7 @@
+1.0 (21.8.2007)
+
+* Fixed handling of incomplete command line arguments.
+
 1.0 rc 2 (2.8.2007)
 
 * Fixed overflow bug in WAV generation, which caused pzx2wav render

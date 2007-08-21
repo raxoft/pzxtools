@@ -50,7 +50,7 @@ int main( int argc, char * * argv )
             }
             case 'h': {
                 fprintf( stderr, "usage: tzx2pzx [-o output_file] [input_file]\n" ) ;
-                fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
+                fprintf( stderr, "-o f   write output to given file instead of standard output\n" ) ;
                 return EXIT_FAILURE ;
             }
         }

@@ -836,7 +836,7 @@ int main( int argc, char * * argv )
             }
             case 'h': {
                 fprintf( stderr, "usage: txt2pzx [-p] [-o output_file] [input_file]\n" ) ;
-                fprintf( stderr, "-o     write output to given file instead of standard output\n" ) ;
+                fprintf( stderr, "-o f   write output to given file instead of standard output\n" ) ;
                 fprintf( stderr, "-p     store pulse sequences exactly as specified\n" ) ;
                 return EXIT_FAILURE ;
             }

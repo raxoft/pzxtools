@@ -67,18 +67,6 @@ inline s32 swapped_endian( const s32 value )
     return static_cast< s32 >( swapped_endian( static_cast< u32 >( value ) ) ) ;
 }
 
-template<>
-inline f32 swapped_endian( const f32 value )
-{
-    union {
-        f32 as_f32 ;
-        u32 as_u32 ;
-    } t ;
-    t.as_f32 = value ;
-    t.as_u32 = swapped_endian( t.as_u32 ) ;
-    return t.as_f32 ;
-}
-
 //@}
 
 /**

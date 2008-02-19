@@ -7,7 +7,7 @@ TZX files are. The difference is that the PZX files allow storing of anything
 TZX files can, while being almost as simple to process as the TAP files are.
 
 The suite includes converters from other common formats, namely tzx2pzx for
-TZX, tap2pzx for TAP and csw2pzx for CSW. These may be used to convert your
+TZX, tap2pzx for TAP and csw2pzx for CSW. These can be used to convert your
 favorite tape files to PZX format. The suite also contains converter to WAV
 format, pzx2wav. This is useful for example in case you want to send the
 tape file to a real machine via sound output. Finally, there are two

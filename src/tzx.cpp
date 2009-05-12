@@ -971,6 +971,7 @@ void tzx_process_blocks(
 {
     if ( nesting_level > 10 ) {
         warn( "too deep nesting detected - returning" ) ;
+        return ;
     }
 
     // Simply process block by block, stopping when end block is encountered.

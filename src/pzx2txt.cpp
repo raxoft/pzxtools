@@ -40,6 +40,11 @@ bool option_skip_data ;
  */
 bool option_expand_pulses ;
 
+/**
+ * Flag set when initial level of each pulse should be printed as well.
+ */
+bool option_annotate_pulses ;
+
 } ;
 
 /**
@@ -207,7 +212,7 @@ void dump_data( FILE * const output_file, const byte * data, uint data_size, con
 }
 
 /**
- * Dump given amount of pulses of given duration to a file.
+ * Dump given amount of pulses of given duration to a file, toggling level as appropriate.
  */
 void dump_pulses(
     FILE * const output_file,
@@ -220,15 +225,23 @@ void dump_pulses(
 
     if ( option_expand_pulses ) {
         while ( count-- > 0 ) {
-            // fprintf( output_file, "PULSE\d %u\n", uint( level ), duration ) ;
-            fprintf( output_file, "PULSE %u\n", duration ) ;
+            if ( option_annotate_pulses ) {
+              fprintf( output_file, "PULSE%u %u\n", uint( level ), duration ) ;
+            }
+            else {
+              fprintf( output_file, "PULSE %u\n", duration ) ;
+            }
             level = ! level ;
         }
         return ;
     }
 
-    // fprintf( output_file, "PULSE\d %u", uint( level ), duration ) ;
-    fprintf( output_file, "PULSE %u", duration ) ;
+    if ( option_annotate_pulses ) {
+      fprintf( output_file, "PULSE%u %u", uint( level ), duration ) ;
+    }
+    else {
+      fprintf( output_file, "PULSE %u", duration ) ;
+    }
     if ( count > 1 ) {
         fprintf( output_file, " %u", count ) ;
     }
@@ -553,6 +566,10 @@ int main( int argc, char * * argv )
                 option_expand_pulses = true ;
                 break ;
             }
+            case 'l': {
+                option_annotate_pulses = true ;
+                break ;
+            }
             default: {
                 fprintf( stderr, "error: invalid option %s\n", argv[ i ] ) ;
 
@@ -566,6 +583,7 @@ int main( int argc, char * * argv )
                 fprintf( stderr, "-x     dump bytes in data blocks as headers when possible\n" ) ;
                 fprintf( stderr, "-d     don't dump content of data blocks\n" ) ;
                 fprintf( stderr, "-e     expand pulses, dumping each one on separate line\n" ) ;
+                fprintf( stderr, "-l     print initial level of each pulse dumped\n" ) ;
                 return EXIT_FAILURE ;
             }
         }

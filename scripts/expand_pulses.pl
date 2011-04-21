@@ -10,7 +10,7 @@
 
 while(<>) {
 
-    if ( my( $duration, $count ) = /^PULSE\s+(\d+)\s+(\d+)/i ) {
+    if ( my( $duration, $count ) = /^PULSE\d?\s+(\d+)\s+(\d+)/i ) {
         while( $count-- > 0 ) {
             print "PULSE $duration\n" ;
         }

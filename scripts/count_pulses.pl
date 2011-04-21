@@ -10,7 +10,7 @@ my %stats ;
 
 while(<>) {
 
-    next unless ( my( $duration, $count ) = /^PULSE\s+(\d+)\s*(\d*)/i ) ;
+    next unless ( my( $duration, $count ) = /^PULSE\d?\s+(\d+)\s*(\d*)/i ) ;
 
     $count = 1 if $count eq "" ;
 

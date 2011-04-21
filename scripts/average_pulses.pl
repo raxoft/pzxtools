@@ -11,7 +11,7 @@ my $total = 0 ;
 
 while(<>) {
 
-    next unless ( my( $duration, $count ) = /^PULSE\s+(\d+)\s*(\d*)/i ) ;
+    next unless ( my( $duration, $count ) = /^PULSE\d?\s+(\d+)\s*(\d*)/i ) ;
 
     next if $duration == 0 ;
 

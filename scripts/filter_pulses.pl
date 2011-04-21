@@ -10,11 +10,11 @@ my @filters ;
 
 loop: while(<>) {
 
-    if ( my( $duration, $rest ) = /^PULSE\s+(\d+)(.*)$/i ) {
+    if ( my( $orig_level, $duration, $rest ) = /^PULSE(\d?)\s+(\d+)(.*)$/i ) {
         my @f = @filters ;
         while ( my( $result, $min, $max ) = splice( @f, 0, 3 ) ) {
             if ( $min <= $duration && $duration <= $max ) {
-                print "PULSE $result$rest\n" ;
+                print "PULSE$orig_level $result$rest\n" ;
                 next loop ;
             }
         }

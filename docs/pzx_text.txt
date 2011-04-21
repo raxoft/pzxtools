@@ -125,7 +125,7 @@ The sequence limit specifies how long pulse sequences to consider at maximum
 when searching for sequences used to encode the bits. When not present, the
 default value 2 is used. The maximum value is 255.
 
-The sequence order is may be used to control which sequence is going to
+The sequence order may be used to control which sequence is going to
 become sequence 0 and which sequence 1. When set to 0 or 1, the sequence
 starting at the first pulse becomes sequence 0 or 1, respectively. When set
 to 2, the sequence whose total duration is shorter becomes sequence 0. When

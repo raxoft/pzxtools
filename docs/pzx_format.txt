@@ -4,9 +4,10 @@ PZX (Perfect ZX Tape) file format version 1.0
 The PZX file format consists of a sequence of blocks. Each block has the
 following uniform structure:
 
-0 u32 tag - unique identifier for the block type.
-4 u32 size - size of the block in bytes, excluding the tag and size fields themselves.
-8 u8[size] data - arbitrary amount of block data.
+offset type     name   meaning
+0      u32      tag    unique identifier for the block type.
+4      u32      size   size of the block in bytes, excluding the tag and size fields themselves.
+8      u8[size] data   arbitrary amount of block data.
 
 The block tags are four ASCII letter identifiers indicating how to interpret the
 block data. The first letter is stored first in the file (i.e., at
@@ -34,10 +35,11 @@ strings at all.
 
 The sole purpose of the format is to encode sequence of pulses of certain duration.
 Pulse level is defined to be either low or high. When loading, low level
-corresponds to the bit 6 of port 0xFE reset (EAR on) and high level set (EAR off).
+corresponds to the bit 6 of port 0xFE reset (EAR off) and high level set (EAR on).
 Similarly, when saving, low level corresponds to the bit 3 of port 0xFE reset
-(MIC on) and high level to set (MIC off). The block descriptions below define the
-initial level at start of each block (and would do so even for any future
+(MIC off) and high level to set (MIC on). (Note that O'Hara's ROM Disassembly
+book got these EAR/MIC on/off terms incorrectly swapped). The block descriptions below
+define the initial level at start of each block (and would do so even for any future
 block which might be ever introduced, so an implementation may take this for
 granted), and assume the level changes after each pulse generated (even if
 its duration is zero). However note that implementations may as well decide
@@ -89,9 +91,10 @@ The core blocks which must be supported are:
 PZXT - PZX header block
 -----------------------
 
-0 u8 major - major version number (currently 1).
-1 u8 minor - minor version number (currently 0).
-2 u8[?] info - tape info, see below.
+offset type     name   meaning
+0      u8       major  major version number (currently 1).
+1      u8       minor  minor version number (currently 0).
+2      u8[?]    info   tape info, see below.
 
 This block distinguishes the PZX files from other files and may provide
 additional info about the file as well. This block must be always present as
@@ -151,12 +154,13 @@ necessary to specify the Language field in case all texts are in English.
 PULS - Pulse sequence
 ---------------------
 
-0 u16 count - bits 0-14 optional (see bit 15) repeat count, always greater than zero
-              bit 15 repeat count present: 0 not present 1 present
-2 u16 duration1 - bits 0-14 low/high (see bit 15) pulse duration bits
-                  bit 15 duration encoding: 0 duration1 1 ((duration1<<16)+duration2)
-4 u16 duration2 - optional (see bit 15 of duration1) low bits of pulse duration
-... ditto repeated until the end of the block
+offset type   name      meaning
+0      u16    count     bits 0-14 optional repeat count (see bit 15), always greater than zero
+                        bit 15 repeat count present: 0 not present 1 present
+2      u16    duration1 bits 0-14 low/high (see bit 15) pulse duration bits
+                        bit 15 duration encoding: 0 duration1 1 ((duration1<<16)+duration2)
+4      u16    duration2 optional low bits of pulse duration (see bit 15 of duration1) 
+6      ...    ...       ditto repeated until the end of the block
 
 This block is used to represent arbitrary sequence of pulses. The sequence
 consists of pulses of given duration, with each pulse optionally repeated
@@ -222,14 +226,15 @@ stick to this scheme.
 DATA - Data block
 -----------------
 
-0 u32 count - bits 0-30 number of bits in the data stream
-              bit 31 initial pulse level: 0 low 1 high
-4 u16 tail - duration of extra pulse after last bit of the block
-6 u8 p0 - number of pulses encoding bit equal to 0.
-7 u8 p1 - number of pulses encoding bit equal to 1.
-8 u16[p0] s0 - sequence of pulse durations encoding bit equal to 0.
-8+2*p0 u16[p1] s1 - sequence of pulse durations encoding bit equal to 1.
-8+2*(p0+p1) u8[ceil(bits/8)] data - data stream, see below.
+offset      type             name  meaning
+0           u32              count bits 0-30 number of bits in the data stream
+                                   bit 31 initial pulse level: 0 low 1 high
+4           u16              tail  duration of extra pulse after last bit of the block
+6           u8               p0    number of pulses encoding bit equal to 0.
+7           u8               p1    number of pulses encoding bit equal to 1.
+8           u16[p0]          s0    sequence of pulse durations encoding bit equal to 0.
+8+2*p0      u16[p1]          s1    sequence of pulse durations encoding bit equal to 1.
+8+2*(p0+p1) u8[ceil(bits/8)] data  data stream, see below.
 
 This block is used to represent binary data using specified sequences of
 pulses. The data bytes are processed bit by bit, most significant bits first.
@@ -279,8 +284,9 @@ used to represent continuous stream of pulses.
 PAUS - Pause
 ------------
 
-0 u32 duration - bits 0-30 duration of the pause
-                 bit 31 initial pulse level: 0 low 1 high
+offset type   name      meaning
+0      u32    duration  bits 0-30 duration of the pause
+                        bit 31 initial pulse level: 0 low 1 high
 
 This block may be used to produce pauses during which the pulse level is not
 particularly important. The pause consists of pulse of given duration and
@@ -301,7 +307,8 @@ Additional blocks which should be supported:
 BRWS - Browse point
 -------------------
 
-0 u8[?] text - text describing this browse point
+offset type   name   meaning
+0      u8[?]  text   text describing this browse point
 
 This block may be used when it is desirable to mark some point on the tape
 as target for tape browsing. The text is the single line describing this
@@ -326,7 +333,8 @@ rewind to, together with appropriately descriptive name.
 STOP - Stop tape command
 ------------------------
 
-0 u16 flags - when exactly to stop the tape (1 48k only, other always).
+offset type   name   meaning
+0      u16    flags  when exactly to stop the tape (1 48k only, other always).
 
 This block is used to instruct an emulator to stop the virtual tape deck.
 The flags field is used to specify under which conditions this should

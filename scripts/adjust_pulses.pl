@@ -12,7 +12,7 @@ my $level = 0 ;
 
 while(<>) {
 
-    if ( my( $orig_level, $duration, $count ) = /^PULSE(\d?)\s+(\d+)\s*(\d*)/i ) {
+    if ( my( $orig_level, $duration, $count, $rest ) = /^PULSE(\d?)\s+(\d+)\s*(\d*)(.*)$/i ) {
 
         $count = 1 if $count eq "" ;
 
@@ -31,7 +31,7 @@ while(<>) {
             $duration = int( $duration ) ;
         }
 
-        print "PULSE$orig_level $duration", ( $count > 1 ? " $count" : "" ), "\n" ;
+        print "PULSE$orig_level $duration", ( $count > 1 ? " $count" : "" ), "$rest\n" ;
 
         $level ^= ( $count & 1 ) ;
 

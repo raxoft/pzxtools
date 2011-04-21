@@ -207,10 +207,41 @@ void dump_data( FILE * const output_file, const byte * data, uint data_size, con
 }
 
 /**
+ * Dump given amount of pulses of given duration to a file.
+ */
+void dump_pulses(
+    FILE * const output_file,
+    bool & level,
+    const uint duration,
+    uint count = 1
+)
+{
+    // Output the appropriate number of pulses, according to the command line options.
+
+    if ( option_expand_pulses ) {
+        while ( count-- > 0 ) {
+            // fprintf( output_file, "PULSE\d %u\n", uint( level ), duration ) ;
+            fprintf( output_file, "PULSE %u\n", duration ) ;
+            level = ! level ;
+        }
+        return ;
+    }
+
+    // fprintf( output_file, "PULSE\d %u", uint( level ), duration ) ;
+    fprintf( output_file, "PULSE %u", duration ) ;
+    if ( count > 1 ) {
+        fprintf( output_file, " %u", count ) ;
+    }
+    fprintf( output_file, "\n" ) ;
+    level ^= ( count & 1 ) ;
+}
+
+/**
  * Dump bits from given byte using given (little endian) pulse sequences.
  */
 void dump_bits(
     FILE * const output_file,
+    bool & level,
     uint bit_count,
     uint bits,
     const uint pulse_count_0,
@@ -249,7 +280,7 @@ void dump_bits(
         while ( count-- > 0 ) {
             uint duration = *sequence++ ;
             duration += *sequence++ << 8 ;
-            fprintf( output_file, "PULSE %u\n", duration ) ;
+            dump_pulses( output_file, level, duration ) ;
         }
     }
 }
@@ -288,7 +319,7 @@ void dump_data_block( FILE * const output_file, const byte * data, uint data_siz
 
     // Extract initial pulse level.
 
-    const bool level = ( ( bit_count >> 31 ) != 0 ) ;
+    bool level = ( ( bit_count >> 31 ) != 0 ) ;
 
     bit_count &= 0x7FFFFFFF ;
 
@@ -312,24 +343,25 @@ void dump_data_block( FILE * const output_file, const byte * data, uint data_siz
 
         fprintf( output_file, "PULSES\n" ) ;
 
-        // Make sure the level is high if necessary.
+        // Make sure the level is high by using zero pulse if necessary.
 
         if ( level ) {
-            fprintf( output_file, "PULSE 0\n" ) ;
+            level = false ;
+            dump_pulses( output_file, level, 0 ) ;
         }
 
         // Dump all the bits.
 
         while ( bit_count > 8 ) {
-            dump_bits( output_file, 8, *data++, pulse_count_0, pulse_count_1, sequence_0, sequence_1 ) ;
+            dump_bits( output_file, level, 8, *data++, pulse_count_0, pulse_count_1, sequence_0, sequence_1 ) ;
             bit_count -= 8 ;
         }
-        dump_bits( output_file, bit_count, *data, pulse_count_0, pulse_count_1, sequence_0, sequence_1 ) ;
+        dump_bits( output_file, level, bit_count, *data, pulse_count_0, pulse_count_1, sequence_0, sequence_1 ) ;
 
         // Include the tail pulse if necessary.
 
         if ( tail_cycles > 0 ) {
-            fprintf( output_file, "PULSE %u\n", tail_cycles ) ;
+            dump_pulses( output_file, level, tail_cycles ) ;
         }
 
         return ;
@@ -386,6 +418,8 @@ void dump_pulse_block( FILE * const output_file, const byte * data, uint data_si
 
     fprintf( output_file, "PULSES\n" ) ;
 
+    bool level = 0 ;
+
     // Dump all pulses in the block.
 
     while ( data_size > 0 ) {
@@ -406,18 +440,7 @@ void dump_pulse_block( FILE * const output_file, const byte * data, uint data_si
 
         // Output the appropriate number of pulses, according to the command line options.
 
-        if ( option_expand_pulses ) {
-            while ( count-- > 0 ) {
-                fprintf( output_file, "PULSE %u\n", duration ) ;
-            }
-        }
-        else {
-            fprintf( output_file, "PULSE %u", duration ) ;
-            if ( count > 1 ) {
-                fprintf( output_file, " %u", count ) ;
-            }
-            fprintf( output_file, "\n" ) ;
-        }
+        dump_pulses( output_file, level, duration, count ) ;
     }
 }
 

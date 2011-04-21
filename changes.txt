@@ -1,3 +1,8 @@
+1.1 (21.4.2011)
+
++ Added -l option to pzx2txt and annotate_pulses.pl script, allowing
+  convenient annotation of pulses with their initial pulse level.
+
 1.0 (21.8.2007)
 
 * Fixed handling of incomplete command line arguments.

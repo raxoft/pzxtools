@@ -20,6 +20,14 @@ as if pzx2txt -e was used in the first place.
 
 Some scripts may require their input expanded in this way.
 
+annotate_pulses.pl
+----------------
+
+This script annotates the pulses with their initial pulse level,
+as if pzx2txt -l was used in the first place.
+
+This may be useful if you want to verify the polarity is as expected.
+
 adjust_pulses.pl        
 ----------------
 
@@ -164,6 +172,10 @@ Examples:
 
 History
 =======
+
+1.1 (21.4.2011)
+
++ added annotate_pulses.pl script, and added support for annotated pulses in general.
 
 1.0 (16.6.2007)
 

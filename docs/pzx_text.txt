@@ -1,4 +1,4 @@
-PZX text format syntax version 1.0
+PZX text format syntax version 1.1
 ==================================
 
 This is the description of the PZX text format as used by the pzx2txt and
@@ -243,8 +243,8 @@ Blocks this keyword may appear in: PZX
 
 Pulse level: not affected.
 
-PULSE <duration> [count]
-------------------------
+PULSE[0|1] <duration> [count]
+-----------------------------
 
 This keyword adds given amount of pulses of given duration to the current
 block.
@@ -253,6 +253,11 @@ Both duration and count are normally arbitrary 32 bit numbers, but may be
 limited to less bits in case some special features are used when encoding.
 For example, using using -p option of txt2pzx limits duration to 31 bits and
 count to 15 bits, and use of the PACK block limits the duration to 16 bits.
+
+Note that the PULSE keyword may be annotated with the optional pulse level,
+such as when generated with -l option of pzx2txt. However this annotation
+has no effect on the actual level of the pulse, which is controlled solely
+by the enclosing block and the amount of preceding pulses as usual.
 
 Blocks this keyword may appear in: PULSES, PACK
 
@@ -371,6 +376,10 @@ Like XOR, except that subtraction is used instead of exclusive-or.
 
 History
 =======
+
+1.1 (21.4.2011)
+
++ added note about annotated pulses.
 
 1.0 (16.6.2007)
 

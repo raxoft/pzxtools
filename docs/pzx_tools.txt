@@ -142,6 +142,16 @@ Options:
 
         See also the -p option of txt2pzx.
 
+-l      Annotate each pulse with its initial pulse level, 0 for low level
+        and 1 for high level. This makes it very easy to check the polarity
+        of each pulse dumped, and helps to keep the polarity right during editing.
+
+        However note that this annotation is only informational, in particular
+        it has no influence on the actual pulse level when processed by txt2pzx
+        or any of the included processing scripts.
+
+        By default, the dumped pulses are not distinguished in any way.
+
 txt2pzx
 -------
 
@@ -169,6 +179,10 @@ Options:
 
 History
 =======
+
+1.1 (21.4.2011)
+
++ added -l option to pzx2txt to annotate pulses with their initial pulse level.
 
 1.0 (16.6.2007)
 

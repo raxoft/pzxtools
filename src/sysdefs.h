@@ -1,4 +1,4 @@
-// $Id$
+// $Id: sysdefs.h 318 2007-06-26 08:12:39Z patrik $
 
 /**
  * @file Platform dependent stuff.

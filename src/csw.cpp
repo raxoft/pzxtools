@@ -1,4 +1,4 @@
-// $Id$
+// $Id: csw.cpp 302 2007-06-15 07:37:58Z patrik $
 
 /**
  * @file Rendering of CSW files.

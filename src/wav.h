@@ -1,4 +1,4 @@
-// $Id$
+// $Id: wav.h 302 2007-06-15 07:37:58Z patrik $
 
 /**
  * @file WAV stuff.

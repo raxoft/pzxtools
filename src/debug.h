@@ -1,4 +1,4 @@
-// $Id$
+// $Id: debug.h 315 2007-06-25 20:49:34Z patrik $
 
 /**
  * @file Debug support.

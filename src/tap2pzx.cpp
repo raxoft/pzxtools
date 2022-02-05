@@ -1,4 +1,4 @@
-// $Id$
+// $Id: tap2pzx.cpp 359 2007-08-21 06:45:06Z patrik $
 
 /**
  * @file TAP->PZX convertor.

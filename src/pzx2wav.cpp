@@ -1,4 +1,4 @@
-// $Id$
+// $Id: pzx2wav.cpp 359 2007-08-21 06:45:06Z patrik $
 
 /**
  * @file PZX->WAV convertor.

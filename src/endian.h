@@ -1,4 +1,4 @@
-// $Id$
+// $Id: endian.h 378 2007-09-13 12:16:10Z patrik $
 
 /**
  * @file Byte order conversions.

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: wav.cpp 336 2007-07-30 19:50:57Z patrik $
 
 /**
  * @file Rendering to WAV files.

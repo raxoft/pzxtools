@@ -1,4 +1,4 @@
-// $Id$
+// $Id: pzx2txt.cpp 1489 2011-04-21 19:07:40Z patrik $
 
 /**
  * @file PZX->TXT convertor.

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile 320 2007-06-26 21:39:37Z patrik $
 #
 # Simple makefile for the PZX tools suite.
 
